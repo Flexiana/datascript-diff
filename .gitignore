@@ -1,0 +1,9 @@
+.cpcache/
+.nrepl-port
+.idea
+target/
+/pom*
+.clj-kondo/cache/
+.shadow-cljs/
+node_modules/
+resources/public/js/

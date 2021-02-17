@@ -1,0 +1,9 @@
+{:deps true
+ :builds {:diffs {:target     :browser
+                  :output-dir "resources/public/js/diffs"
+                  :asset-path "/js/diffs"
+                  :devtools   {:http-root          "resources/public"
+                               :http-port          8080
+                               :http-resource-root "."
+                               :preloads           [devtools.preload]}
+                  :modules    {:main {:init-fn ui/run}}}}}
