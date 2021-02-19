@@ -2,7 +2,7 @@
 (ns diff
   (:require [datascript.core :as ds]
             [datascript.db :refer [db-from-reader]]
-            [clojure.test :refer [deftest testing is]]
+            [clojure.test :refer [deftest is]]
             [matcher-combinators.test :refer [match?]]
             [clojure.edn :as edn]))
 
