@@ -18,41 +18,36 @@
     #_(ds/conn-from-db m)))
 
 
-(defn logit
-  [x]
-  (println x)
-  x)
-
-
-(defn to-add
+(defn ->extend
   [a b]
   (reduce (fn [acc [k v]]
-            (let [vk (if (coll? k) k [k])
-                  av (get-in a vk)]
+            (let [vector-key (if (coll? k) k [k])
+                  a-value (get-in a vector-key)]
               (cond
-                (and (map? av) (map? v)) (let [{:keys [+ -]} (to-add av v)
-                                               p (reduce (fn [acc [k w]]
-                                                           (-> (assoc-in acc [:+ (into vk k)] w)
-                                                               (assoc-in  [:tmp (into vk k)] w))) acc +)]
-                                           (reduce (fn [acc [k w]] (assoc-in acc [:- (into vk k)] w)) p -))
-
-                (nil? av) (assoc-in acc [:+ vk] v)
-                (not= v av) (-> (assoc-in acc [:- vk] av)
-                                (assoc-in [:+ vk] v))
-                :else acc))) {:tmp a} b))
+                (and (map? a-value) (map? v)) (merge acc (let [{:keys [+ -]} (->extend a-value v)
+                                                               p (reduce (fn [acc [k w]]
+                                                                           (assoc-in acc [:+ (into vector-key k)] w)) acc +)]
+                                                           (reduce (fn [acc [k w]] (assoc-in acc [:- (into vector-key k)] w)) p -)))
+                (nil? a-value) (assoc-in acc [:+ vector-key] v)
+                (not= v a-value) (-> (assoc-in acc [:- vector-key] a-value)
+                                     (assoc-in [:+ vector-key] v))
+                :else acc))) {} b))
 
 
-(defn to-delete
+(defn ->remove
+  [acc a b]
+  (reduce (fn [acc [k v]]
+            (let [vector-key (if (coll? k) k [k])
+                  b-value (get-in b vector-key)]
+              (cond
+                (and (map? b-value) (map? v)) (merge acc (->remove acc v b-value))
+                (nil? b-value) (assoc-in acc [:- vector-key] v)
+                :else acc)))
+          acc
+          a))
+
+
+(defn make
   [a b]
-  (reduce (fn [acc [k _]]
-            (if (get b k)
-              acc
-              (conj acc k))) [] a))
-
-
-(defn make-it
-  [a b]
-  (-> (to-add a b)
-      (to-delete b)))
-
-
+  (-> (->extend a b)
+      (->remove a b)))
