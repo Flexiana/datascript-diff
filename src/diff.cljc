@@ -12,9 +12,28 @@
     :else (conj selector value)))
 
 (deftest make-selector-test
-  (is (match? [] (make-selector [] {})))
-  (is (match? [:a] (make-selector [] {:a 1})))
-  (is (match? [:a 0] (make-selector [] {:a [1]}))))
+  (is (match? [] (make-selector [] {} {})))
+  (is (match? [[:a]] (make-selector [] {} {:a 1})))
+  (is (match? [[:a] [:b]] (make-selector [] {} {:a 1
+                                                :b 2})))
+  (is (match? [[:a [:b]]] (make-selector [] {} {:a {:b {}}})))
+  (is (match? [[:a] [:b [:c]] [:c]] (make-selector [] {} {:a 1
+                                                          :b {:c 2}
+                                                          :c 3})))
+  (is (match? [[:a]
+               [:b [:c
+                    [:a]
+                    [:d]]]
+               [:c]]
+              (make-selector [] {} {:a 1
+                                    :b {:c {:a 1
+                                            :d 3}}
+                                    :c 3})))
+  (is (match? [[:a [0]]] {:a [1]}))
+  (is (match? [[:a [0
+                    [:b]
+                    [:c]]]] (make-selector [] {} {:a [{:b 1}
+                                                      {:c 2}]}))))
 
 (defn map-differences [have want]
   (map make-selector have))
