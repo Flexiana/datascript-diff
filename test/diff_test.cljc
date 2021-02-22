@@ -95,11 +95,12 @@
   (test-commit {:a {:a {:a 1 :b 2}} :b 2 :d {:e 5}} {:a {:a {:a 2} :b 2} :b 3})
   (test-commit {:a "apple" :b [1 2 3 4 5 6]} {:b [4 5 6]}))
 
-(is (= {:a {:a {:- 1, :+ 2}, :b 2}, :d {:- {:e 5}}, :b {:+ 3}}
-       (prepare-print {:a {:a 1
-                           :b       2}
-                       :d       {:e 5}}
-                      {:+ {[:a :a] 2
-                           [:b]    3}
-                       :- {[:a :a] 1
-                           [:d]    {:e 5}}})))
+(deftest print-prepare
+  (is (= {:a {:a {:- 1, :+ 2}, :b 2}, :d {:- {:e 5}}, :b {:+ 3}}
+         (prepare-print {:a {:a 1
+                             :b       2}
+                         :d       {:e 5}}
+                        {:+ {[:a :a] 2
+                             [:b]    3}
+                         :- {[:a :a] 1
+                             [:d]    {:e 5}}}))))
