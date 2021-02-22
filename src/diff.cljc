@@ -8,16 +8,17 @@
 
 (defn make-selector [selector have value-want]
   (cond (map? value-want)  (reduce (fn [selector [k v :as m]]
-                                     (if (map? v)
-                                       (conj selector (make-selector [k] m v))
-                                       (conj selector (make-selector selector have k))))
+                                     (cond (map? v)  (conj selector (make-selector [k] m v))
+                                           (coll? v) (make-selector [k] m v)
+                                           :else     (conj selector (make-selector selector have k))))
                                    selector
                                    value-want)
-        (coll? value-want) (reduce (fn [selector el]
-                                     (cond (map? el)  (make-selector selector have value-want)
-                                           (coll? el) el
-                                           :else      el))
-                                   selector value-want)
+        (coll? value-want) (reduce (fn [[acc selector] el]
+                                     (prn [[acc selector] el])
+                                     (cond #_#_  (map? el)  (make-selector selector have value-want)
+                                           #_#_  (coll? el) el
+                                           :else [(conj selector [acc])]))
+                                   [0 selector] value-want)
         :else              [value-want]))
 
 (deftest make-selector-test
