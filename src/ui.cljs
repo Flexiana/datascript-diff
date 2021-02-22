@@ -6,12 +6,7 @@
             [reagent.core :as r]
             [clojure.tools.reader.edn :as edn]))
 
-(defonce state (r/atom {:map_1 "{:a {:a 1
-                                    :b 2}
-                                :d {:e 5}}"
-                        :map_2 "{:a {:a 2
-                                    :b 2}
-                                :b 3}"}))
+(defonce state (r/atom {}))
 
 (defn update-diff
   [{:keys [map_1 map_2]}]
@@ -44,7 +39,9 @@
      {:type     :textarea
       :rows     25
       :columns  80
-      :value (update-diff @state)
+      :value    (try
+                  (update-diff @state)
+                  (catch :default e ""))
       :readOnly true}]]])
 
 (defcard valami (react-card (r/as-element [diff state])))

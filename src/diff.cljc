@@ -137,7 +137,6 @@
 (defn- prep_2
   [into op what]
   (reduce (fn [acc [ks v]]
-            (println "ks " ks "v " v)
             (update-in acc ks assoc op v)) into what))
 
 (defn prepare-print
