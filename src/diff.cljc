@@ -3,7 +3,8 @@
             [datascript.db :refer [db-from-reader]]
             [clojure.test :refer [deftest is]]
             [matcher-combinators.test :refer [match?]]
-            [clojure.edn :as edn]))
+            [clojure.edn :as edn]
+            [clojure.string :as str]))
 
 (defn make-selector
   [selector value]
@@ -127,3 +128,21 @@
   [a {:keys [+ -]}]
   (let [sup (reduce reduct a -)]
     (reduce (fn [a [ks v]] (assoc-in a ks v)) sup +)))
+
+(defn- prep_1
+  [into op what]
+  (reduce (fn [acc [ks v]]
+            (assoc-in acc ks {op v})) into what))
+
+(defn- prep_2
+  [into op what]
+  (reduce (fn [acc [ks v]]
+            (println "ks " ks "v " v)
+            (update-in acc ks assoc op v)) into what))
+
+(defn prepare-print
+  [a {:keys [+ -]}]
+  (-> (prep_1 a :- -)
+      (prep_2 :+ +)))
+
+
