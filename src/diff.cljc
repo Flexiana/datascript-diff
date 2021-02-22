@@ -5,11 +5,20 @@
             [clojure.test :refer [deftest is]]
             [matcher-combinators.test :refer [match?]]
             [clojure.edn :as edn]))
-(defn make-selector [selector value]
-  (case value
-    map? (map (fn [[k _v]] (make-selector selector k)) value)
-    coll? (-> value)
-    :else (conj selector value)))
+
+(defn make-selector [selector have value-want]
+  (cond (map? value-want)  (reduce (fn [selector [k v :as m]]
+                                     (if (map? v)
+                                       (conj selector (make-selector [k] m v))
+                                       (conj selector (make-selector selector have k))))
+                                   selector
+                                   value-want)
+        (coll? value-want) (reduce (fn [selector el]
+                                     (cond (map? el)  (make-selector selector have value-want)
+                                           (coll? el) el
+                                           :else      el))
+                                   selector value-want)
+        :else              [value-want]))
 
 (deftest make-selector-test
   (is (match? [] (make-selector [] {} {})))
