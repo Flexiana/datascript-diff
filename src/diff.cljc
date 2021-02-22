@@ -38,7 +38,10 @@
                                     :b {:c {:a 1
                                             :d 3}}
                                     :c 3})))
-  (is (match? [[:a [0]]] {:a [1]}))
+  (is (match? [[:a [0]]] (make-selector [] {} {:a [1]})))
+  (is (match? [[:a [0]] [:b]] (make-selector [] {} {:a [1]
+                                                    :b 2})))
+  (is (match? [[:a [0 [1 0]]]] (make-selector [] {} {:a [1 []]})))
   (is (match? [[:a [0
                     [:b]
                     [:c]]]] (make-selector [] {} {:a [{:b 1}
