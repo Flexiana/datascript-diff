@@ -4,7 +4,9 @@
             [clojure.test :refer [deftest is]]
             [matcher-combinators.test :refer [match?]]
             [clojure.edn :as edn]))
-(defn make-selector [selector value]
+
+(defn make-selector
+  [selector value]
   (case value
     map? (map (fn [[k _v]] (make-selector selector k)) value)
     coll? (-> value)
@@ -15,23 +17,24 @@
   (is (match? [:a] (make-selector [] {:a 1})))
   (is (match? [:a 0] (make-selector [] {:a [1]}))))
 
-(defn map-differences [have want]
+(defn map-differences
+  [have want]
   (map make-selector have))
 
 (deftest map-differences-test
-  (is (match? {::have {}
-               ::want {}
+  (is (match? {::have       {}
+               ::want       {}
                ::have->want []})
       (map-differences {} {}))
-  (is (match? {::have {:a 1}
-               ::want {:a 2}
+  (is (match? {::have       {:a 1}
+               ::want       {:a 2}
                ::have->want [{::path [:a]
                               ::have 1
                               ::want 2}]})
       (map-differences {:a 1} {:a 2}))
 
-  (is (match? {::have {:a 1}
-               ::want {:a [1]}
+  (is (match? {::have       {:a 1}
+               ::want       {:a [1]}
                ::have->want [{::path [:a]
                               ::have 1
                               ::want [1]}
@@ -39,19 +42,19 @@
                               ::have nil
                               ::want 1}]}
               (map-differences {:a 1} {:a [1]})))
-  (is (match? {::have {:a 1}
-               ::want {:b 2}
+  (is (match? {::have       {:a 1}
+               ::want       {:b 2}
                ::have->want [{::path [:a]
                               ::have 1
                               ::want nil}]}
               (map-differences {:a 1} {:b 2})))
-  (is (match? {::have {:a 1}
-               ::want {:b 2}
+  (is (match? {::have       {:a 1}
+               ::want       {:b 2}
                ::have->want [{::path [:a]
                               ::have 1
                               ::want nil}]}))
-  (is (match? {::have {:a 1}
-               ::want {:b 2}
+  (is (match? {::have       {:a 1}
+               ::want       {:b 2}
                ::have->want [{::path [:a]
                               ::have {:b 2}
                               ::want 1}
@@ -70,7 +73,6 @@
     schema
     #_(ds/conn-from-db m)))
 
-
 (defn ->extend
   [a b]
   (reduce (fn [acc [k v]]
@@ -80,12 +82,12 @@
                 (and (map? a-value) (map? v)) (merge acc (let [{:keys [+ -]} (->extend a-value v)
                                                                p (reduce (fn [acc [k w]]
                                                                            (assoc-in acc [:+ (into vector-key k)] w)) acc +)]
-                                                           (reduce (fn [acc [k w]] (assoc-in acc [:- (into vector-key k)] w)) p -)))
+                                                           (reduce (fn [acc [k w]]
+                                                                     (assoc-in acc [:- (into vector-key k)] w)) p -)))
                 (nil? a-value) (assoc-in acc [:+ vector-key] v)
                 (not= v a-value) (-> (assoc-in acc [:- vector-key] a-value)
                                      (assoc-in [:+ vector-key] v))
                 :else acc))) {} b))
-
 
 (defn ->remove
   [acc a b]
@@ -96,11 +98,22 @@
                 (and (map? b-value) (map? v)) (merge acc (->remove acc v b-value))
                 (nil? b-value) (assoc-in acc [:- vector-key] v)
                 :else acc)))
-          acc
-          a))
-
+    acc
+    a))
 
 (defn make
   [a b]
   (-> (->extend a b)
       (->remove a b)))
+
+(defn commit
+  [a {:keys [+ -]}]
+  (let [sup (reduce (fn core
+                      [a [ks v]]
+                      (cond
+                        (empty? ks) a
+                        (= 1 (count ks)) (dissoc a (first ks))
+                        :else (assoc a (first ks) (core (get a (first a)) [(rest ks) v])))) a -)]
+    (reduce (fn [a [ks v]]
+              (assoc-in a ks v))
+      sup +)))
