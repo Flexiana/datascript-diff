@@ -74,10 +74,12 @@
     #_(ds/conn-from-db m)))
 
 (defn get-into
+  "helper for handling embedded maps"
   [in-to base where what]
   (reduce (fn [old [ks w]] (assoc-in old [where (into base ks)] w)) in-to what))
 
 (defn expansion
+  "Collects what has been added, or modified"
   [a b]
   (reduce (fn [acc [k v]]
             (let [vector-key (if (coll? k) k [k])
@@ -92,6 +94,7 @@
                 :else acc))) {} b))
 
 (defn narrowing
+  "Collects what has been deleted. Depending on 'fn expansion'"
   [acc a b]
   (reduce (fn [acc [k v]]
             (let [vector-key (if (coll? k) k [k])
@@ -106,11 +109,12 @@
     a))
 
 (defn make
+  "Generates a git like diff from two maps."
   [a b]
   (-> (expansion a b)
       (narrowing a b)))
 
-(defn reduct
+(defn- reduct
   [a [ks v]]
   (let [current (first ks)]
     (cond
@@ -119,6 +123,7 @@
       :else (assoc a current (reduct (get a current) [(rest ks) v])))))
 
 (defn commit
+  "Applies a diff to a map"
   [a {:keys [+ -]}]
   (let [sup (reduce reduct a -)]
     (reduce (fn [a [ks v]] (assoc-in a ks v)) sup +)))
