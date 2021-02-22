@@ -3,47 +3,41 @@
     [clojure.test :refer :all]
     [diff :refer [commit
                   make
-                  ->remove
-                  ->extend]]))
+                  narrowing
+                  expansion]]))
 
-(deftest step-one)
-(is (= {} (->extend {} {})))
-(is (= {} (->extend {:a 1} {:a 1})))
-(is (= {:+ {[:a] 2}} (->extend {} {:a 2})))
-(is (= {:+ {[:b] 2 [:c] 3}} (->extend {:a 1} {:b 2 :c 3})))
-
-(is (= {:- {[:a] 1} :+ {[:a] 2 [:b] 2 [:c] 3}}
-       (->extend {:a 1} {:a 2 :b 2 :c 3})))
-
-(is (= {:+ {[:a] {:a 1}}} (->extend {} {:a {:a 1}})))
-(is (= {:+ {[:a] {:a 1}}} (->extend {:b 2} {:a {:a 1}})))
-
-(is (= {:- {[:a] 2}
-        :+ {[:a] {:a 1}
-            [:b] 3}}
-       (->extend {:a 2} {:a {:a 1}
-                         :b 3})))
-
-(is (= {:+ {[:b] 3}}
-       (->extend {:a {:a 1}} {:a {:a 1}
-                              :b 3})))
-
-(is (= {:+ {[:a :a] 2
-            [:b]    3}
-        :- {[:a :a] 1}}
-       (->extend {:a {:a 1}} {:a {:a 2}
-                              :b 3})))
-
-(is (= {:- {[:b] [1 2 3 4 5 6]}
-        :+ {[:b] [4 5 6]}}
-       (->extend {:b [1 2 3 4 5 6]} {:b [4 5 6]})))
+(deftest step-one
+  (is (= {} (expansion {} {})))
+  (is (= {} (expansion {:a 1} {:a 1})))
+  (is (= {:+ {[:a] 2}} (expansion {} {:a 2})))
+  (is (= {:+ {[:b] 2 [:c] 3}} (expansion {:a 1} {:b 2 :c 3})))
+  (is (= {:- {[:a] 1} :+ {[:a] 2 [:b] 2 [:c] 3}}
+         (expansion {:a 1} {:a 2 :b 2 :c 3})))
+  (is (= {:+ {[:a] {:a 1}}} (expansion {} {:a {:a 1}})))
+  (is (= {:+ {[:a] {:a 1}}} (expansion {:b 2} {:a {:a 1}})))
+  (is (= {:- {[:a] 2}
+          :+ {[:a] {:a 1}
+              [:b] 3}}
+         (expansion {:a 2} {:a {:a 1}
+                            :b 3})))
+  (is (= {:+ {[:b] 3}}
+         (expansion {:a {:a 1}} {:a {:a 1}
+                                 :b 3})))
+  (is (= {:+ {[:a :a] 2
+              [:b]    3}
+          :- {[:a :a] 1}}
+         (expansion {:a {:a 1}} {:a {:a 2}
+                                 :b 3})))
+  (is (= {:- {[:b] [1 2 3 4 5 6]}
+          :+ {[:b] [4 5 6]}}
+         (expansion {:b [1 2 3 4 5 6]} {:b [4 5 6]}))))
 
 (deftest step-two
-  (is (= {:- {[:a] "a"}} (->remove {} {:a "a"} {})))
-  (is (= {} (->remove {} {:a "c"} {:a "a"})))
-  (is (= {:- {[:b] 2}} (->remove {} {:a "c" :b 2} {:a "a"})))
-  (is (= {:- {[:a] {:a 1}}} (->remove {} {:a {:a 1}} {})))
-  (is (= {} (->remove {} {:a {:a {:b 5}}} {:a 2}))))
+  (is (= {:- {[:a] "a"}} (narrowing {} {:a "a"} {})))
+  (is (= {} (narrowing {} {:a "c"} {:a "a"})))
+  (is (= {:- {[:b] 2}} (narrowing {} {:a "c" :b 2} {:a "a"})))
+  (is (= {:- {[:a] {:a 1}}} (narrowing {} {:a {:a 1}} {})))
+  (is (= {} (narrowing {} {:a {:a {:b 5}}} {:a 2}))))
 
 (deftest full-diff
   (is (= {} (make {} {})))
