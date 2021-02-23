@@ -63,7 +63,43 @@
                [:c]]
               (unwrap-selector {:a 1
                                 :b {:c 2}
-                                :c 3}))))
+                                :c 3})))
+  (is (match? [[:a]
+               [:b :c :a]
+               [:b :c :d]
+               [:c]]
+              (unwrap-selector [[:a]
+                                [:b [:c
+                                     [:a]
+                                     [:d]]]
+                                [:c]])))
+  (is (match? [[0]] (unwrap-selector [])))
+  (is (match? [[:a 0]] (unwrap-selector [[:a [0]]])))
+  (is (match? [[:a 0]
+               [:b 0]] (unwrap-selector [] [[:a [0]] [:b [0]]])))
+  (is (match? [[0]] (unwrap-selector [[0]])))
+  (is (match? [[:a 0]] (unwrap-selector [[:a [0]]])))
+  (is (match? [[:a 0]
+               [:b]] (unwrap-selector [[:a [0]] [:b]])))
+  (is (match? [[:a 0]
+               [:a 1]] (unwrap-selector [[:a [0] [1]]])))
+  (is (match? [[:a 0]
+               [:a 1 0]] (unwrap-selector [[:a
+                                            [0]
+                                            [1 [0]]]])))
+  (is (match? [[:a
+                [0 [:b]]
+                [1 [:c]]]] (unwrap-selector [[:a [0 [:b]] [1 [:c]]]])))
+  (is (match? [[:a 0 :b 0]
+               [:a 0 :b 1 0]
+               [:a 0 :c 0 :d]]
+              (unwrap-selector [[:a
+                                 [0
+                                  [:b
+                                   [0]
+                                   [1 [0]]]
+                                  [:c
+                                   [0 [:d]]]]]]))))
 
 
 #_(deftest apply-selector-test
