@@ -1,11 +1,11 @@
-(ns diff-test
+(ns recursive-diff-test
   (:require
     [clojure.test :refer :all]
-    [diff :refer [commit
-                  make
-                  narrowing
-                  prepare-print
-                  expansion]]))
+    [recursive-diff :refer [commit
+                            make
+                            narrowing
+                            prepare-print
+                            expansion]]))
 
 (deftest step-one
   (is (= {} (expansion {} {})))
