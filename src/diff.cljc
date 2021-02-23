@@ -6,54 +6,60 @@
             [matcher-combinators.test :refer [match?]]
             [clojure.edn :as edn]))
 
-(defn make-selector [selector have value-want]
+(defn make-selector [selector value-want]
   (cond (map? value-want)         (reduce (fn [selector [k v :as m]]
-                                            (cond (map? v)  (conj selector (make-selector [k] m v))
-                                                  (coll? v) (make-selector [k] m v)
-                                                  :else     (conj selector (make-selector selector have k))))
+                                            (cond (map? v)  (conj selector (make-selector [k] v))
+                                                  (coll? v) (conj selector (make-selector [k] v))
+                                                  :else     (conj selector (make-selector selector  k))))
                                           selector
                                           value-want)
         (and (coll? value-want)
-             (empty? value-want)) [(conj selector [0])]
-        (coll? value-want)        [(let [vec-acc (range (count value-want))]
-                                     (reduce (fn [selector v]
-                                               (let [coll-v (nth value-want v)]
-                                                 (prn [selector v vec-acc coll-v])
-                                                 (cond (coll? coll-v) (do (prn [:entra?])
-                                                                          (conj selector coll-v))
-                                                       :else          (conj selector
-                                                                            (make-selector selector have v)))))
-                                             selector
-                                             vec-acc)
-                                     #_(cond
-                                         :else (conj selector vec-acc)))]
+             (empty? value-want)) (conj selector [0])
+        (coll? value-want)        (let [vec-acc (count value-want)]
+                                    (reduce (fn [selector v]
+                                              (prn selector)
+                                              (cond
+                                                :else (conj selector
+                                                            (make-selector selector v))))
+                                            selector
+                                            (range vec-acc)))
         :else                     [value-want]))
+
 (deftest make-selector-test
-  (is (match? [] (make-selector [] {} {})))
-  (is (match? [[:a]] (make-selector [] {} {:a 1})))
-  (is (match? [[:a] [:b]] (make-selector [] {} {:a 1
-                                                :b 2})))
-  (is (match? [[:a [:b]]] (make-selector [] {} {:a {:b {}}})))
-  (is (match? [[:a] [:b [:c]] [:c]] (make-selector [] {} {:a 1
-                                                          :b {:c 2}
-                                                          :c 3})))
+  (is (match? [] (make-selector [] {})))
+  (is (match? [[:a]] (make-selector [] {:a 1})))
+  (is (match? [[:a] [:b]] (make-selector [] {:a 1
+                                             :b 2})))
+  (is (match? [[:a [:b]]] (make-selector [] {:a {:b {}}})))
+  (is (match? [[:a] [:b [:c]] [:c]] (make-selector [] {:a 1
+                                                       :b {:c 2}
+                                                       :c 3})))
   (is (match? [[:a]
                [:b [:c
                     [:a]
                     [:d]]]
                [:c]]
-              (make-selector [] {} {:a 1
-                                    :b {:c {:a 1
-                                            :d 3}}
-                                    :c 3})))
-  (is (match? [[:a [0]]] (make-selector [] {} {:a [1]})))
-  (is (match? [[:a [0]] [:b]] (make-selector [] {} {:a [1]
-                                                    :b 2})))
-  (is (match? [[:a [0 [1 0]]]] (make-selector [] {} {:a [1 []]})))
-  (is (match? [[:a [0
-                    [:b]
-                    [:c]]]] (make-selector [] {} {:a [{:b 1}
-                                                      {:c 2}]}))))
+              (make-selector [] {:a 1
+                                 :b {:c {:a 1
+                                         :d 3}}
+                                 :c 3})))
+  (is (match? [[0]] (make-selector [] [])))
+  (is (match? [[0]] (make-selector [] [1])))
+  (is (match? [[:a [0]]] (make-selector [] {:a []})))
+  (is (match? [[:a [0]]
+               [:b [0]]] (make-selector [] {:a []
+                                            :b []})))
+  (is (match? [[:a [0]]] (make-selector [] {:a [1]})))
+  (is (match? [[:a [0]] [:b]] (make-selector [] {:a [1]
+                                                 :b 2})))
+  (is (match? [[:a
+                [0 1]]] (make-selector [] {:a [1 2]})))
+  (is (match? [[:a
+                [0 [1 0]]]] (make-selector [] {:a [1 []]})))
+  #_(is (match? [[:a [0
+                      [:b]
+                      [:c]]]] (make-selector [] {:a [{:b 1}
+                                                     {:c 2}]}))))
 
 (defn map-differences [have want]
   (map make-selector have))
