@@ -1,6 +1,7 @@
 (ns recursive-ui
   (:require [recursive-diff :refer [prepare-print
-                                    make]]
+                                    make
+                                    commit]]
             [nubank.workspaces.card-types.react :refer [react-card]]
             [nubank.workspaces.core :refer [mount defcard]]
             [reagent.core :as r]
@@ -18,14 +19,15 @@
                {})
         to-print (if (empty? diff)
                    ""
-                   (prepare-print a_map diff))]
-    [diff to-print]))
+                   (prepare-print a_map diff))
+        comm (commit a_map diff)]
+    [diff to-print comm]))
 
 (defn- update-diff!
   [state]
-  (let [[diff to-print] (try
-                          (diffs @state)
-                          (catch :default e [{} {}]))
+  (let [[diff to-print commit-on] (try
+                                    (diffs @state)
+                                    (catch :default e [{} {}]))
         diff-str (if (empty? diff)
                    "No diff calculated"
                    (-> diff
@@ -34,8 +36,12 @@
                        (str/replace #"[\{|}]" "\n")
                        (str/replace #"\n+" "\n")
                        rest
-                       str/join))]
+                       str/join))
+        applied-on (if (empty? commit-on)
+                     "No diff calculated"
+                     (str commit-on))]
     (swap! state assoc :to-print to-print)
+    (swap! state assoc :commit applied-on)
     (swap! state assoc :diff-str diff-str)))
 
 (defn- diff-div
@@ -60,8 +66,8 @@
 (defn- visual-div
   [text]
   [:div {:style {:width        :max-content
-                 :overflow :auto
-                 :resize :both
+                 :overflow     :auto
+                 :resize       :both
                  :min-width    "175px"
                  :border-style :solid
                  :border-width :thin
@@ -105,13 +111,14 @@
         colorized (colorize to-print)]
     (update-diff! state)
     [:div {:style {:margin :auto
-                   :width :max-content}}
+                   :width  :max-content}}
      [:table {:style {:margin :auto
-                      :width :max-content}}
+                      :width  :max-content}}
       [:thead [:tr
-               [:th "Map A"] [:th "Map B"] [:th "Calculated diff"] [:th "Visual diff"]]]
+               [:th "Map A"] [:th "Map B"] [:th "Calculated diff"] [:th "Visual diff"] [:th "Commit diff on Map A"]]]
       [:tbody [:tr
                [:td (text-area map_1 (partial on-change state :map_1))]
                [:td (text-area map_2 (partial on-change state :map_2))]
                [:td (text-area (:diff-str @state))]
-               [:td {:style {:vertical-align :top}} colorized]]]]]))
+               [:td {:style {:vertical-align :top}} colorized]
+               [:td (text-area (:commit @state))]]]]]))
