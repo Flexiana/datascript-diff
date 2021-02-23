@@ -65,8 +65,18 @@
   (is (match? [[:a
                 [0]
                 [1 [0]]]] (make-selector [] {:a [1 []]})))
-  (is (match? [[:a [0 [:b]] [1 [:c]]]] (make-selector [] {:a [{:b 1}
-                                                              {:c 2}]}))))
+  (is (match? [[:a
+                [0 [:b]]
+                [1 [:c]]]] (make-selector [] {:a [{:b 1}
+                                                  {:c 2}]})))
+  (is (match? [[:a [0
+                    [:b
+                     [0]
+                     [1 [0]]]
+                    [:c
+                     [0 [:d]]]]]]
+              (make-selector [] {:a [{:b [1 [2]]
+                                      :c [{:d 1}]}]}))))
 
 (defn map-differences [have want]
   (map make-selector have))
