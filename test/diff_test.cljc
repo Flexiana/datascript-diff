@@ -1,5 +1,5 @@
 (ns diff-test
-  (:require [diff :refer [make-selector apply-selector]]
+  (:require [diff :refer [unwrap-selector make-selector #_apply-selector]]
             #?(:clj [clojure.test :refer [deftest is]]
                :cljs [cljs.test :refer [deftest is] :include-macros true])
             [matcher-combinators.test :refer [match?]]))
@@ -50,24 +50,40 @@
               (make-selector [] {:a [{:b [1 [2]]
                                       :c [{:d 1}]}]}))))
 
-(deftest apply-selector
-  (is (match? [{::path  [:a]
-                ::value 1}]
-              (apply-selector {:a 1})))
-  (is (match? [{::path  [:a]
-                ::value 1}
-               {::path  [:b]
-                ::value 2}] (apply-selector {:a 1
-                                             :b 2})))
-  (is (match? [{:path  [:a :b]
-                :value nil}]
-              (apply-selector {:a {:b {}}})))
-  (is (match? [{::path  [:a]
-                ::value 1}
-               {::path [:b :c]
-                :value 2}
-               {::path  [:c]
-                ::value 3}]
-              (apply-selector {:a 1
-                               :b {:c 2}
-                               :c 3}))))
+(deftest unwrap-selector-test
+  (is (match? [[:a]]
+              (unwrap-selector {:a 1})))
+  (is (match? [[:a]
+               [:b]] (unwrap-selector {:a 1
+                                       :b 2})))
+  (is (match? [[:a :b]]
+              (unwrap-selector {:a {:b {}}})))
+  (is (match? [[:a]
+               [:b :c]
+               [:c]]
+              (unwrap-selector {:a 1
+                                :b {:c 2}
+                                :c 3}))))
+
+
+#_(deftest apply-selector-test
+    (is (match? [{:path  [:a]
+                  :value 1}]
+                (apply-selector {:a 1})))
+    (is (match? [{:path  [:a]
+                  :value 1}
+                 {:path  [:b]
+                  :value 2}] (apply-selector {:a 1
+                                              :b 2})))
+    (is (match? [{:path  [:a :b]
+                  :value nil}]
+                (apply-selector {:a {:b {}}})))
+    (is (match? [{:path  [:a]
+                  :value 1}
+                 {:path  [:b :c]
+                  :value 2}
+                 {:path  [:c]
+                  :value 3}]
+                (apply-selector {:a 1
+                                 :b {:c 2}
+                                 :c 3}))))
