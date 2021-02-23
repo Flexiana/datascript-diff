@@ -1,41 +1,83 @@
+(ns diff)
 (ns diff
   (:require [datascript.core :as ds]
             [datascript.db :refer [db-from-reader]]
             [clojure.test :refer [deftest is]]
             [matcher-combinators.test :refer [match?]]
-            [clojure.edn :as edn]
-            [clojure.string :as str]))
+            [clojure.edn :as edn]))
 
-(defn make-selector
-  [selector value]
-  (case value
-    map? (map (fn [[k _v]] (make-selector selector k)) value)
-    coll? (-> value)
-    :else (conj selector value)))
+(defn make-selector [selector value-want]
+  (cond (map? value-want)         (reduce (fn [selector [k v :as m]]
+                                            (cond (map? v)  (conj selector (make-selector [k] v))
+                                                  (coll? v) (conj selector (make-selector [k] v))
+                                                  :else     (conj selector (make-selector selector  k))))
+                                          selector
+                                          value-want)
+        (and (coll? value-want)
+             (empty? value-want)) (conj selector [0])
+        (coll? value-want)        (let [vec-acc (count value-want)]
+                                    (reduce (fn [selector v]
+                                              (prn selector)
+                                              (cond
+                                                :else (conj selector
+                                                            (make-selector selector v))))
+                                            selector
+                                            (range vec-acc)))
+        :else                     [value-want]))
 
 (deftest make-selector-test
   (is (match? [] (make-selector [] {})))
-  (is (match? [:a] (make-selector [] {:a 1})))
-  (is (match? [:a 0] (make-selector [] {:a [1]}))))
+  (is (match? [[:a]] (make-selector [] {:a 1})))
+  (is (match? [[:a] [:b]] (make-selector [] {:a 1
+                                             :b 2})))
+  (is (match? [[:a [:b]]] (make-selector [] {:a {:b {}}})))
+  (is (match? [[:a] [:b [:c]] [:c]] (make-selector [] {:a 1
+                                                       :b {:c 2}
+                                                       :c 3})))
+  (is (match? [[:a]
+               [:b [:c
+                    [:a]
+                    [:d]]]
+               [:c]]
+              (make-selector [] {:a 1
+                                 :b {:c {:a 1
+                                         :d 3}}
+                                 :c 3})))
+  (is (match? [[0]] (make-selector [] [])))
+  (is (match? [[0]] (make-selector [] [1])))
+  (is (match? [[:a [0]]] (make-selector [] {:a []})))
+  (is (match? [[:a [0]]
+               [:b [0]]] (make-selector [] {:a []
+                                            :b []})))
+  (is (match? [[:a [0]]] (make-selector [] {:a [1]})))
+  (is (match? [[:a [0]] [:b]] (make-selector [] {:a [1]
+                                                 :b 2})))
+  (is (match? [[:a
+                [0 1]]] (make-selector [] {:a [1 2]})))
+  (is (match? [[:a
+                [0 [1 0]]]] (make-selector [] {:a [1 []]})))
+  #_(is (match? [[:a [0
+                      [:b]
+                      [:c]]]] (make-selector [] {:a [{:b 1}
+                                                     {:c 2}]}))))
 
-(defn map-differences
-  [have want]
+(defn map-differences [have want]
   (map make-selector have))
 
 (deftest map-differences-test
-  (is (match? {::have       {}
-               ::want       {}
+  (is (match? {::have {}
+               ::want {}
                ::have->want []})
       (map-differences {} {}))
-  (is (match? {::have       {:a 1}
-               ::want       {:a 2}
+  (is (match? {::have {:a 1}
+               ::want {:a 2}
                ::have->want [{::path [:a]
                               ::have 1
                               ::want 2}]})
       (map-differences {:a 1} {:a 2}))
 
-  (is (match? {::have       {:a 1}
-               ::want       {:a [1]}
+  (is (match? {::have {:a 1}
+               ::want {:a [1]}
                ::have->want [{::path [:a]
                               ::have 1
                               ::want [1]}
@@ -43,19 +85,19 @@
                               ::have nil
                               ::want 1}]}
               (map-differences {:a 1} {:a [1]})))
-  (is (match? {::have       {:a 1}
-               ::want       {:b 2}
+  (is (match? {::have {:a 1}
+               ::want {:b 2}
                ::have->want [{::path [:a]
                               ::have 1
                               ::want nil}]}
               (map-differences {:a 1} {:b 2})))
-  (is (match? {::have       {:a 1}
-               ::want       {:b 2}
+  (is (match? {::have {:a 1}
+               ::want {:b 2}
                ::have->want [{::path [:a]
                               ::have 1
                               ::want nil}]}))
-  (is (match? {::have       {:a 1}
-               ::want       {:b 2}
+  (is (match? {::have {:a 1}
+               ::want {:b 2}
                ::have->want [{::path [:a]
                               ::have {:b 2}
                               ::want 1}
