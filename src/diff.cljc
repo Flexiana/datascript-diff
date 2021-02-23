@@ -32,6 +32,16 @@
                                             value-want)
                     :else             [value-want])))
 
+(defn unwrap-selector [m]
+  (map (fn [[f & r :as v]]
+         (let [[hd & tl] r]
+           (cond
+             (and (coll? r)
+                  (nil? tl)) (do
+                               (prn [f r hd tl])
+                               (concat [f] hd))
+             (nil? r)        v)))
+       (make-selector [] m)))
 
 (defn map-differences [have want]
   (map make-selector have))
