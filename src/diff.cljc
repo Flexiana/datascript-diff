@@ -7,23 +7,30 @@
             [clojure.edn :as edn]))
 
 (defn make-selector [selector value-want]
-  (cond (map? value-want)         (reduce (fn [selector [k v :as m]]
-                                            (cond (map? v)  (conj selector (make-selector [k] v))
-                                                  (coll? v) (conj selector (make-selector [k] v))
-                                                  :else     (conj selector (make-selector selector  k))))
-                                          selector
-                                          value-want)
-        (and (coll? value-want)
-             (empty? value-want)) (conj selector [0])
-        (coll? value-want)        (let [vec-acc (count value-want)]
-                                    (reduce (fn [selector v]
-                                              (prn selector)
-                                              (cond
-                                                :else (conj selector
-                                                            (make-selector selector v))))
-                                            selector
-                                            (range vec-acc)))
-        :else                     [value-want]))
+  (cond (map? value-want)  (reduce (fn [selector [k v]]
+                                     (cond (map? v)  (conj selector (make-selector [k] v))
+                                           (coll? v) (conj selector (make-selector [k] v))
+                                           :else     (conj selector (make-selector selector  k))))
+                                   selector
+                                   value-want)
+        (coll? value-want) (let [vec-acc       (count value-want)
+                                 range-vec-acc (range vec-acc)]
+
+                             (if (empty? range-vec-acc)
+                               (conj selector [0])
+                               (reduce (fn [selector v]
+                                         (let [vec-val  (nth value-want v)
+                                               next-sel (make-selector selector v)]
+                                           (cond (coll? vec-val)  (conj selector
+                                                                        (make-selector next-sel vec-val))
+                                                 (coll? next-sel) (conj selector next-sel)
+                                                 :else            (do (prn [next-sel])
+                                                                      (conj selector next-sel)))))
+                                       selector
+                                       range-vec-acc)))
+        :else (cond (empty? selector) (conj selector
+                                            value-want)
+                    :else             [value-want])))
 
 (deftest make-selector-test
   (is (match? [] (make-selector [] {})))
