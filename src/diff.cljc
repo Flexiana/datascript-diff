@@ -44,22 +44,22 @@
                                          :d 3}}
                                  :c 3})))
   (is (match? [[0]] (make-selector [] [])))
-  (is (match? [[0]] (make-selector [] [1])))
   (is (match? [[:a [0]]] (make-selector [] {:a []})))
   (is (match? [[:a [0]]
                [:b [0]]] (make-selector [] {:a []
                                             :b []})))
+  (is (match? [[0]] (make-selector [] [1])))
   (is (match? [[:a [0]]] (make-selector [] {:a [1]})))
   (is (match? [[:a [0]] [:b]] (make-selector [] {:a [1]
                                                  :b 2})))
   (is (match? [[:a
-                [0 1]]] (make-selector [] {:a [1 2]})))
+                [0]
+                [1]]] (make-selector [] {:a [1 2]})))
   (is (match? [[:a
-                [0 [1 0]]]] (make-selector [] {:a [1 []]})))
-  #_(is (match? [[:a [0
-                      [:b]
-                      [:c]]]] (make-selector [] {:a [{:b 1}
-                                                     {:c 2}]}))))
+                [0]
+                [1 [0]]]] (make-selector [] {:a [1 []]})))
+  (is (match? [[:a [0 [:b]] [1 [:c]]]] (make-selector [] {:a [{:b 1}
+                                                              {:c 2}]}))))
 
 (defn map-differences [have want]
   (map make-selector have))
