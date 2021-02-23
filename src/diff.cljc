@@ -32,51 +32,6 @@
                                             value-want)
                     :else             [value-want])))
 
-(deftest make-selector-test
-  (is (match? [] (make-selector [] {})))
-  (is (match? [[:a]] (make-selector [] {:a 1})))
-  (is (match? [[:a] [:b]] (make-selector [] {:a 1
-                                             :b 2})))
-  (is (match? [[:a [:b]]] (make-selector [] {:a {:b {}}})))
-  (is (match? [[:a] [:b [:c]] [:c]] (make-selector [] {:a 1
-                                                       :b {:c 2}
-                                                       :c 3})))
-  (is (match? [[:a]
-               [:b [:c
-                    [:a]
-                    [:d]]]
-               [:c]]
-              (make-selector [] {:a 1
-                                 :b {:c {:a 1
-                                         :d 3}}
-                                 :c 3})))
-  (is (match? [[0]] (make-selector [] [])))
-  (is (match? [[:a [0]]] (make-selector [] {:a []})))
-  (is (match? [[:a [0]]
-               [:b [0]]] (make-selector [] {:a []
-                                            :b []})))
-  (is (match? [[0]] (make-selector [] [1])))
-  (is (match? [[:a [0]]] (make-selector [] {:a [1]})))
-  (is (match? [[:a [0]] [:b]] (make-selector [] {:a [1]
-                                                 :b 2})))
-  (is (match? [[:a
-                [0]
-                [1]]] (make-selector [] {:a [1 2]})))
-  (is (match? [[:a
-                [0]
-                [1 [0]]]] (make-selector [] {:a [1 []]})))
-  (is (match? [[:a
-                [0 [:b]]
-                [1 [:c]]]] (make-selector [] {:a [{:b 1}
-                                                  {:c 2}]})))
-  (is (match? [[:a [0
-                    [:b
-                     [0]
-                     [1 [0]]]
-                    [:c
-                     [0 [:d]]]]]]
-              (make-selector [] {:a [{:b [1 [2]]
-                                      :c [{:d 1}]}]}))))
 
 (defn map-differences [have want]
   (map make-selector have))
