@@ -73,16 +73,20 @@
   (let [current (first ks)]
     (cond
       (empty? ks) a
-      (= 1 (count ks)) (let [av (get a current)]
-                         (println "av" av)
-                         (if (or (vector? v) (seq? v))
-                           (assoc a current (seq-commit av v))
+      (= 1 (count ks)) (let [va (get a current)]
+                         (if (or (seq? v) (vector? v))
+                           (assoc a current (seq-commit va {:- v}))
                            (dissoc a current)))
       :else (assoc a current (reduct (get a current) [(rest ks) v])))))
 
 (defn map-commit
   "Applies a diff to a map"
   [a-map {:keys [+ -] :as diff}]
-  (let [sup (reduce reduct a-map -)]
-    (reduce (fn [a [ks v]]
-              (assoc-in a ks v)) sup +)))
+  (let [sup (reduce reduct a-map -)
+        ext (reduce (fn [a [ks v]]
+                      (let [va (get-in a ks)]
+                        (if (or (seq? v) (vector? v))
+                          (assoc-in a ks (seq-commit va {:+ v}))
+                          (assoc-in a ks v)))) sup +)]
+    ext))
+
