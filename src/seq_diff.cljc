@@ -56,7 +56,7 @@
 (common-ordered-part [1 2 1 3 4 5] [2 1 3 6 4 5])
 (common-ordered-part [1 3 4 5 6 7 8 2 3 2] [1 2 3 2])
 
-(defn diff
+(defn seq-diff
   [a-seq b-seq]
   (let [diff (loop [av (vec a-seq)
                     bv (vec b-seq)
@@ -80,9 +80,9 @@
      :-        (map :- diff)
      :to-print diff}))
 
-(diff [12 1 3 4 5 6 7 8 2 3 2] [1 2 3 2])
+(seq-diff [12 1 3 4 5 6 7 8 2 3 2] [1 2 3 2])
 
-(defn commit
+(defn seq-commit
   [a-seq diff]
   (if (:to-print diff)
     (reduce (fn [acc e]
@@ -102,5 +102,5 @@
         (first mv) (recur (rest as) (rest pv) (rest mv) acc)
         :else (recur (rest as) (rest pv) (rest mv) (conj acc (first as)))))))
 
-(commit [12 1 3 4 5 6 7 8 2 3 2] {:+ '(nil nil 2 nil nil nil nil nil nil nil nil nil),
-                                  :- '(12 nil nil nil 4 5 6 7 8 nil 3 2)})
+(seq-commit [12 1 3 4 5 6 7 8 2 3 2] {:+ '(nil nil 2 nil nil nil nil nil nil nil nil nil),
+                                      :-     '(12 nil nil nil 4 5 6 7 8 nil 3 2)})

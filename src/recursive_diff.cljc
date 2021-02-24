@@ -21,7 +21,7 @@
                 :else acc))) {} b))
 
 (defn narrowing
-  "Collects what has been deleted. Depending on 'fn expansion'"
+  "Collects what has been deleted. Run 'fn expansion' first"
   [acc a b]
   (reduce (fn [acc [k v]]
             (let [vector-key (if (coll? k) k [k])
@@ -32,28 +32,8 @@
                                                    (get-into acc vector-key :-))
                 (nil? b-value) (assoc-in acc [:- vector-key] v)
                 :else acc)))
-          acc
-          a))
-
-(defn make
-  "Generates a git like diff from two maps."
-  [a b]
-  (-> (expansion a b)
-      (narrowing a b)))
-
-(defn- reduct
-  [a [ks v]]
-  (let [current (first ks)]
-    (cond
-      (empty? ks) a
-      (= 1 (count ks)) (dissoc a current)
-      :else (assoc a current (reduct (get a current) [(rest ks) v])))))
-
-(defn commit
-  "Applies a diff to a map"
-  [a {:keys [+ -]}]
-  (let [sup (reduce reduct a -)]
-    (reduce (fn [a [ks v]] (assoc-in a ks v)) sup +)))
+    acc
+    a))
 
 (defn- prep_1
   [into op what]
@@ -69,3 +49,24 @@
   [a {:keys [+ -]}]
   (-> (prep_1 a :- -)
       (prep_2 :+ +)))
+
+(defn map-diff
+  "Generates a git like diff from two maps."
+  [a b]
+  (let [diff (-> (expansion a b)
+                 (narrowing a b))]
+    (assoc diff :to-print (prepare-print a diff))))
+
+(defn- reduct
+  [a [ks v]]
+  (let [current (first ks)]
+    (cond
+      (empty? ks) a
+      (= 1 (count ks)) (dissoc a current)
+      :else (assoc a current (reduct (get a current) [(rest ks) v])))))
+
+(defn map-commit
+  "Applies a diff to a map"
+  [a {:keys [+ -]}]
+  (let [sup (reduce reduct a -)]
+    (reduce (fn [a [ks v]] (assoc-in a ks v)) sup +)))

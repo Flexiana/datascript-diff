@@ -1,8 +1,8 @@
 (ns recursive-diff-test
   (:require
     [clojure.test :refer :all]
-    [recursive-diff :refer [commit
-                            make
+    [recursive-diff :refer [map-commit
+                            map-diff
                             narrowing
                             prepare-print
                             expansion]]))
@@ -41,45 +41,45 @@
   (is (= {} (narrowing {} {:a {:a {:b 5}}} {:a 2}))))
 
 (deftest full-diff
-  (is (= {} (make {} {})))
-  (is (= {} (make {:a 1} {:a 1})))
-  (is (= {:+ {[:a] 2}} (make {} {:a 2})))
-  (is (= {:+ {[:b] 2, [:c] 3}, :- {[:a] 1}} (make {:a 1} {:b 2 :c 3})))
+  (is (= {} (map-diff {} {})))
+  (is (= {} (map-diff {:a 1} {:a 1})))
+  (is (= {:+ {[:a] 2}} (map-diff {} {:a 2})))
+  (is (= {:+ {[:b] 2, [:c] 3}, :- {[:a] 1}} (map-diff {:a 1} {:b 2 :c 3})))
   (is (= {:- {[:a] 1} :+ {[:a] 2 [:b] 2 [:c] 3}}
-         (make {:a 1} {:a 2 :b 2 :c 3})))
-  (is (= {:+ {[:a] {:a 1}}} (make {} {:a {:a 1}})))
-  (is (= {:+ {[:a] {:a 1}}, :- {[:b] 2}} (make {:b 2} {:a {:a 1}})))
+         (map-diff {:a 1} {:a 2 :b 2 :c 3})))
+  (is (= {:+ {[:a] {:a 1}}} (map-diff {} {:a {:a 1}})))
+  (is (= {:+ {[:a] {:a 1}}, :- {[:b] 2}} (map-diff {:b 2} {:a {:a 1}})))
   (is (= {:- {[:a] 2}
           :+ {[:a] {:a 1}
               [:b] 3}}
-         (make {:a 2} {:a {:a 1}
-                       :b 3})))
+         (map-diff {:a 2} {:a {:a 1}
+                           :b     3})))
   (is (= {:+ {[:b] 3}
           :- {[:c] 3}}
-         (make {:a {:a 1} :c 3} {:a {:a 1}
-                                 :b 3})))
+         (map-diff {:a {:a 1} :c 3} {:a {:a 1}
+                                     :b     3})))
   (is (= {:+ {[:a :a] 2
               [:b]    3}
           :- {[:a :a] 1
               [:d]    {:e 5}}}
-         (make {:a {:a 1
-                    :b 2}
-                :d {:e 5}}
-               {:a {:a 2
-                    :b 2}
-                :b 3})))
+         (map-diff {:a {:a 1
+                        :b     2}
+                    :d     {:e 5}}
+                   {:a {:a 2
+                        :b 2}
+                    :b 3})))
   (is (= {:- {[:b] [1 2 3 4 5 6]
               [:a] "apple"}
           :+ {[:b] [4 5 6]}}
-         (make {:a "apple"
-                :b [1 2 3 4 5 6]} {:b [4 5 6]}))))
+         (map-diff {:a "apple"
+                    :b     [1 2 3 4 5 6]} {:b [4 5 6]}))))
 
 (defn test-commit
   [a b]
-  (is (= b (->> (make a b)
-                (commit a))))
-  (is (= a (->> (make b a)
-                (commit b)))))
+  (is (= b (->> (map-diff a b)
+                (map-commit a))))
+  (is (= a (->> (map-diff b a)
+                (map-commit b)))))
 
 (deftest apply-diff
   (test-commit {} {})

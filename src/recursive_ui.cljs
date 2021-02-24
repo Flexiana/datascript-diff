@@ -1,7 +1,7 @@
 (ns recursive-ui
   (:require [recursive-diff :refer [prepare-print
-                                    make
-                                    commit]]
+                                    map-diff
+                                    map-commit]]
             [nubank.workspaces.card-types.react :refer [react-card]]
             [nubank.workspaces.core :refer [mount defcard]]
             [reagent.core :as r]
@@ -15,12 +15,12 @@
   (let [a_map (edn/read-string map_1)
         b_map (edn/read-string map_2)
         diff (if (and (map? a_map) (map? b_map))
-               (make a_map b_map)
+               (map-diff a_map b_map)
                {})
         to-print (if (empty? diff)
                    ""
                    (prepare-print a_map diff))
-        comm (commit a_map diff)]
+        comm (map-commit a_map diff)]
     [diff to-print comm]))
 
 (defn- update-diff!
