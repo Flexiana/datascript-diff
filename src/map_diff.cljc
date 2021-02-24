@@ -1,4 +1,12 @@
-(ns recursive-diff)
+(ns map-diff)
+
+(defn- seq-diff
+  [a b]
+  ((resolve 'seq-diff/seq-diff) a b))
+
+(defn- seq-commit
+  [a diff]
+  ((resolve 'seq-diff/seq-commit) a diff))
 
 (defn get-into
   "helper for handling embedded maps"
@@ -15,6 +23,9 @@
                 (and (map? a-value) (map? v)) (merge acc (let [{:keys [+ -]} (expansion a-value v)]
                                                            (-> (get-into acc vector-key :- -)
                                                                (get-into vector-key :+ +))))
+                (and (coll? a-value) (coll? v)) (let [{:keys [+ -]} (seq-diff a-value v)]
+                                                  (-> (update-in acc [:- vector-key] concat -)
+                                                      (update-in [:+ vector-key] concat +)))
                 (nil? a-value) (assoc-in acc [:+ vector-key] v)
                 (not= v a-value) (-> (assoc-in acc [:- vector-key] a-value)
                                      (assoc-in [:+ vector-key] v))
@@ -62,11 +73,16 @@
   (let [current (first ks)]
     (cond
       (empty? ks) a
-      (= 1 (count ks)) (dissoc a current)
+      (= 1 (count ks)) (let [av (get a current)]
+                         (println "av" av)
+                         (if (or (vector? v) (seq? v))
+                           (assoc a current (seq-commit av v))
+                           (dissoc a current)))
       :else (assoc a current (reduct (get a current) [(rest ks) v])))))
 
 (defn map-commit
   "Applies a diff to a map"
-  [a {:keys [+ -]}]
-  (let [sup (reduce reduct a -)]
-    (reduce (fn [a [ks v]] (assoc-in a ks v)) sup +)))
+  [a-map {:keys [+ -] :as diff}]
+  (let [sup (reduce reduct a-map -)]
+    (reduce (fn [a [ks v]]
+              (assoc-in a ks v)) sup +)))

@@ -56,6 +56,10 @@
 (common-ordered-part [1 2 1 3 4 5] [2 1 3 6 4 5])
 (common-ordered-part [1 3 4 5 6 7 8 2 3 2] [1 2 3 2])
 
+(defn- map-diff
+  [a b]
+  ((resolve 'map-diff/map-diff) a b))
+
 (defn seq-diff
   [a-seq b-seq]
   (let [diff (loop [av (vec a-seq)
