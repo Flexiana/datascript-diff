@@ -101,7 +101,8 @@
   (test-commit {:a {:a 1} :c 3} {:a {:a 1} :b 3})
   (test-commit {:a {:a 1} :b 2 :d {:e 5}} {:a {:a 2 :b 2} :b 3})
   (test-commit {:a {:a {:a 1 :b 2}} :b 2 :d {:e 5}} {:a {:a {:a 2} :b 2} :b 3})
-  (test-commit {:a "apple" :b [1 2 3 4 5 6]} {:b [4 5 6]}))
+  (test-commit {:a "apple" :b [1 2 3 4 5 6]} {:b [4 5 6]})
+  (test-commit {:x [{:a 3} 2]} {:x [{:a 3} 2]}))
 
 (deftest print-prepare
   (is (= {:a {:a {:- 1, :+ 2}, :b 2}, :d {:- {:e 5}}, :b {:+ 3}}
@@ -113,16 +114,11 @@
                          :- {[:a :a] 1
                              [:d]    {:e 5}}}))))
 
-(seq-diff [] [])
-(seq-diff [1] [1])
-(seq-diff [1] [1 2])
-(seq-diff [2] [1 2])
-
 (deftest map-in-seq
   (is (= (first (:to-print (seq-diff [{:a 2} 2] [{:a 3} 2])))
          (:to-print (map-diff {:a 2} {:a 3}))))
   (is (= (first (:+ (seq-diff [{:a 2} 2] [{:a 3} 2])))
          (:+ (map-diff {:a 2} {:a 3}))))
   (is (= (first (:- (seq-diff [{:a 2} 2] [{:a 3} 2])))
-         (:- (map-diff {:a 2} {:a 3})))))
-
+         (:- (map-diff {:a 2} {:a 3}))))
+  (is (= [{:a 3} 2] (seq-commit [{:a 2} 2] (seq-diff [{:a 2} 2] [{:a 3} 2])))))

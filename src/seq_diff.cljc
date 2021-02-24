@@ -1,5 +1,13 @@
 (ns seq-diff)
 
+(defn- map-diff
+  [a b]
+  ((resolve 'map-diff/map-diff) a b))
+
+(defn- map-commit
+  [a b]
+  ((resolve 'map-diff/map-commit) a b))
+
 (defn get-indexes
   [v e]
   (keep-indexed (fn [idx v] (when (= e v) idx)) (vec v)))
@@ -31,34 +39,19 @@
        (mapcat distinct)
        distinct))
 
-(ordered-parts [1 2 1 3 4 5])
-
-(defn logit
-  [x]
-  (println x)
-  x)
-
 (defn common-ordered-part
   [x y]
   (let [y-in-x (reduce concat (for [e y] (get-indexes x e)))
         x-in-y (reduce concat (for [e x] (get-indexes y e)))
         idx-y-in-x (if (empty? y-in-x)
                      []
-                     (reduce longer (logit (ordered-parts y-in-x))))
+                     (reduce longer (ordered-parts y-in-x)))
         idx-x-in-y (if (empty? x-in-y)
                      []
-                     (reduce longer (logit (ordered-parts x-in-y))))
-        common-part (if (< (count idx-x-in-y) (count idx-y-in-x))
-                      (map (vec y) idx-x-in-y)
-                      (map (vec x) idx-y-in-x))]
-    common-part))
-
-(common-ordered-part [1 2 1 3 4 5] [2 1 3 6 4 5])
-(common-ordered-part [1 3 4 5 6 7 8 2 3 2] [1 2 3 2])
-
-(defn- map-diff
-  [a b]
-  ((resolve 'map-diff/map-diff) a b))
+                     (reduce longer (ordered-parts x-in-y)))]
+    (if (< (count idx-x-in-y) (count idx-y-in-x))
+      (map (vec y) idx-x-in-y)
+      (map (vec x) idx-y-in-x))))
 
 (defn seq-diff
   [a-seq b-seq]
@@ -88,23 +81,16 @@
 
 (defn seq-commit
   [a-seq diff]
-  (if (:to-print diff)
-    (reduce (fn [acc e]
-              (cond
-                (:- e) acc
-                (:+ e) (conj acc (:+ e))
-                :else (conj acc e)))
-      []
-      (:to-print diff))
-    (loop [as a-seq
-           pv (:+ diff)
-           mv (:- diff)
-           acc []]
-      (cond
-        (empty? as) (reduce conj acc (remove nil? pv))
-        (first pv) (recur as (rest pv) (rest mv) (conj acc (first pv)))
-        (first mv) (recur (rest as) (rest pv) (rest mv) acc)
-        :else (recur (rest as) (rest pv) (rest mv) (conj acc (first as)))))))
-
-(seq-commit [12 1 3 4 5 6 7 8 2 3 2] {:+ '(nil nil 2 nil nil nil nil nil nil nil nil nil),
-                                      :- '(12 nil nil nil 4 5 6 7 8 nil 3 2)})
+  (loop [as a-seq
+         pv (:+ diff)
+         mv (:- diff)
+         acc []]
+    (cond
+      (empty? as) (reduce conj acc (remove nil? pv))
+      (and (map? (first as)) (map? (first pv)) (map? (first mv))) (recur (rest as) (rest pv) (rest mv)
+                                                                    (conj acc (map-commit (first as)
+                                                                                          {:- (first mv)
+                                                                                           :+ (first pv)})))
+      (first pv) (recur as (rest pv) (rest mv) (conj acc (first pv)))
+      (first mv) (recur (rest as) (rest pv) (rest mv) acc)
+      :else (recur (rest as) (rest pv) (rest mv) (conj acc (first as))))))
