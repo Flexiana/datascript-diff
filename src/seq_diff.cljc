@@ -77,14 +77,14 @@
                            (< a-distance b-distance) (recur av (vec (rest bv)) common (conj acc {:+ (first bv)}))
                            (> a-distance b-distance) (recur (vec (rest av)) bv common (conj acc {:- (first av)}))
                            (= 0 a-distance b-distance) (recur (vec (rest av)) (vec (rest bv)) (rest common) (conj acc (first common)))
+                           (and (= a-distance b-distance) (map? (first av)) (map? (first bv)))
+                           (recur (vec (rest av)) (vec (rest bv)) common (conj acc (map-diff (first av) (first bv))))
                            :else (recur (vec (rest av)) (vec (rest bv)) (rest common) (conj acc (if (= (first bv) (first av))
                                                                                                   (first av)
                                                                                                   {:+ (first bv) :- (first av)})))))))]
     {:+        (map :+ diff)
      :-        (map :- diff)
-     :to-print diff}))
-
-(seq-diff [12 1 3 4 5 6 7 8 2 3 2] [1 2 3 2])
+     :to-print (map #(get % :to-print %) diff)}))
 
 (defn seq-commit
   [a-seq diff]
@@ -93,7 +93,7 @@
               (cond
                 (:- e) acc
                 (:+ e) (conj acc (:+ e))
-                :else  (conj acc e)))
+                :else (conj acc e)))
       []
       (:to-print diff))
     (loop [as a-seq
@@ -107,4 +107,4 @@
         :else (recur (rest as) (rest pv) (rest mv) (conj acc (first as)))))))
 
 (seq-commit [12 1 3 4 5 6 7 8 2 3 2] {:+ '(nil nil 2 nil nil nil nil nil nil nil nil nil),
-                                      :-     '(12 nil nil nil 4 5 6 7 8 nil 3 2)})
+                                      :- '(12 nil nil nil 4 5 6 7 8 nil 3 2)})

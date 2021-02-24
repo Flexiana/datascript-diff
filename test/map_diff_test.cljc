@@ -112,3 +112,17 @@
                              [:b]    3}
                          :- {[:a :a] 1
                              [:d]    {:e 5}}}))))
+
+(seq-diff [] [])
+(seq-diff [1] [1])
+(seq-diff [1] [1 2])
+(seq-diff [2] [1 2])
+
+(deftest map-in-seq
+  (is (= (first (:to-print (seq-diff [{:a 2} 2] [{:a 3} 2])))
+         (:to-print (map-diff {:a 2} {:a 3}))))
+  (is (= (first (:+ (seq-diff [{:a 2} 2] [{:a 3} 2])))
+         (:+ (map-diff {:a 2} {:a 3}))))
+  (is (= (first (:- (seq-diff [{:a 2} 2] [{:a 3} 2])))
+         (:- (map-diff {:a 2} {:a 3})))))
+
