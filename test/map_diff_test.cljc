@@ -10,14 +10,6 @@
                       prepare-print
                       expansion]]))
 
-(defn logit
-  ([m x]
-   (println m x)
-   x)
-  ([x]
-   (println x)
-   x))
-
 (deftest step-one
   (is (= {} (expansion {} {})))
   (is (= {} (expansion {:a 1} {:a 1})))
@@ -83,36 +75,36 @@
                     {:a {:a 2
                          :b 2}
                      :b 3})))
-  (is (= {:-        {[:b] '(1 2 3 nil nil nil), [:a] "apple"}
-          :+        {[:b] '(nil nil nil nil nil nil)}
-          :to-print {:a {:- "apple"}
-                     :b {:- '(1 2 3 nil nil nil)
-                         :+ '(nil nil nil nil nil nil)}}}
+  (is (= {:- {[:b] '(1 2 3 nil nil nil), [:a] "apple"}
+          :+ {[:b] '(nil nil nil nil nil nil), [:a] [123]}
+          :to-print {:a {:- "apple", :+ [123]}, :b {:- '(1 2 3 nil nil nil), :+ '(nil nil nil nil nil nil)}}}
          (map-diff {:a "apple"
-                    :b [1 2 3 4 5 6]} {:b [4 5 6]}))))
+                    :b [1 2 3 4 5 6]}
+                   {:b [4 5 6]
+                    :a [123]}))))
 
-(defn test-commit
+(defn map-full-test
   [a b]
-  (is (= b (->> (logit "diff: " (map-diff a b))
+  (is (= b (->> (map-diff a b)
                 (map-commit a))) (format "%s -> %s" a b))
-  (is (= a (->> (logit "diff: " (map-diff b a))
+  (is (= a (->> (map-diff b a)
                 (map-commit b))) (format "%s -> %s" b a)))
 
-(deftest apply-diff
-  (test-commit {} {})
-  (test-commit {:a 1} {:a 1})
-  (test-commit {} {:a 2})
-  (test-commit {:a 1} {:b 2 :c 3})
-  (test-commit {:a 1} {:a 2 :b 2 :c 3})
-  (test-commit {} {:a {:a 1}})
-  (test-commit {:b 2} {:a {:a 1}})
-  (test-commit {:a 2} {:a {:a 1} :b 3})
-  (test-commit {:a {:a 1} :c 3} {:a {:a 1} :b 3})
-  (test-commit {:a {:a 1} :b 2 :d {:e 5}} {:a {:a 2 :b 2} :b 3})
-  (test-commit {:a {:a {:a 1 :b 2}} :b 2 :d {:e 5}} {:a {:a {:a 2} :b 2} :b 3})
-  (test-commit {:a "apple" :b [1 2 3 4 5 6]} {:b [4 5 6]})
-  (test-commit {:x [{:a 3} 2]} {:x [{:a 3} 2]})
-  (test-commit {:a [:c :b :d]} {:a [:a :b :c]}))
+(deftest map-diff-commit-test
+  (map-full-test {} {})
+  (map-full-test {:a 1} {:a 1})
+  (map-full-test {} {:a 2})
+  (map-full-test {:a 1} {:b 2 :c 3})
+  (map-full-test {:a 1} {:a 2 :b 2 :c 3})
+  (map-full-test {} {:a {:a 1}})
+  (map-full-test {:b 2} {:a {:a 1}})
+  (map-full-test {:a 2} {:a {:a 1} :b 3})
+  (map-full-test {:a {:a 1} :c 3} {:a {:a 1} :b 3})
+  (map-full-test {:a {:a 1} :b 2 :d {:e 5}} {:a {:a 2 :b 2} :b 3})
+  (map-full-test {:a {:a {:a 1 :b 2}} :b 2 :d {:e 5}} {:a {:a {:a 2} :b 2} :b 3})
+  (map-full-test {:a "apple" :b [1 2 3 4 5 6]} {:b [4 5 6]})
+  (map-full-test {:x [{:a 3} 2]} {:x [{:a 3} 2]})
+  (map-full-test {:a [:c :b :d]} {:a [:a :b :c]}))
 
 (deftest print-prepare
   (is (= {:a {:a {:- 1, :+ 2}, :b 2}, :d {:- {:e 5}}, :b {:+ 3}}
@@ -124,18 +116,28 @@
                          :- {[:a :a] 1
                              [:d]    {:e 5}}}))))
 
-(defn st
+(defn seq-diff-commit-test
   [a b]
-  (is (= b (->> (logit "diff: " (seq-diff a b)) (seq-commit a))) (format "%s -> %s" a b))
-  (is (= a (->> (logit "diff:" (seq-diff b a)) (seq-commit b))) (format "%s -> %s" b a)))
+  (is (= b (->> (seq-diff a b)
+                (seq-commit a))) (format "%s -> %s" a b))
+  (is (= a (->> (seq-diff b a)
+                (seq-commit b))) (format "%s -> %s" b a)))
 
-(deftest seq-test)
-(st [:c :b :d] [:a :b :c])
-(st [1 2 3 4 5 6] [4 5 6])
-(common-ordered-part [:a :b :c] [:c :b :d])
-(seq-diff [:a :b :c] [:c :b :d])
-(seq-commit [:a :b :c] {:+ '(:c nil :d), :- '(:a nil :c), :to-print '({:+ :c, :- :a} :b {:- :c, :+ :d})})
-(seq-commit [:a :b :c] {:+ '(:c nil :d), :- '(:a nil :c)})
+(deftest seq-test
+  (is (= [:b] (common-ordered-part [:a :b :c] [:c :b :d])))
+  (is (= [:b] (common-ordered-part [:a :b :c] [:b :d])))
+  (is (= [:b :c] (common-ordered-part [:a :b :c] [:b :c :b :d])))
+  (is (= [] (common-ordered-part [5 6 4 2 1] [7 8 9])))
+  (is (= [1 4] (common-ordered-part [1 2 3 4] [1 4 5 6 7])))
+  (is (= [1 4] (common-ordered-part [1 4 5 6 7] [1 2 3 4])))
+  (is (= [1] (common-ordered-part [1 4 5 6 7] [7 5 1])))
+  (seq-diff-commit-test [:c :b :d] [:a :b :c])
+  (seq-diff-commit-test [1 2 3 4 5 6] [4 5 6])
+  (seq-diff-commit-test [1 2 3 4 5 6] [4 5 6])
+  (seq-diff-commit-test [:a :b :c] [:c :b :d])
+  (seq-diff-commit-test [{:a {:a 2}}] [{:a {:a 3}}])
+  (seq-diff-commit-test [{:a {:a 2}}] [{:a {:a 3}}])
+  (seq-diff-commit-test [{:a {:a {:a 1 :b 2}} :b 2 :d {:e 5}}] [{:a {:a {:a 2} :b 2} :b 3}]))
 
 (deftest map-in-seq
   (is (= (first (:to-print (seq-diff [{:a 2} 2] [{:a 3} 2])))
@@ -144,26 +146,8 @@
          (:+ (map-diff {:a 2} {:a 3}))))
   (is (= (first (:- (seq-diff [{:a 2} 2] [{:a 3} 2])))
          (:- (map-diff {:a 2} {:a 3}))))
-  (is (= [{:a 3} 2] (seq-commit [{:a 2} 2] (seq-diff [{:a 2} 2] [{:a 3} 2])))))
-
-(is (= (first (:- (seq-diff [{:a 2} 2] [{:a 3} 2])))
-       (:- (map-diff {:a 2} {:a 3}))))
-
-(is (= (first (:+ (seq-diff [{:a 2} 2] [{:a 3} 2])))
-       (:+ (map-diff {:a 2} {:a 3}))))
-
-(seq-diff [{:a {:a 2}}] [{:a {:a 3}}])
-(map-diff {:a {:a 2}} {:a {:a 3}})
-
-
-(seq-commit [{:a {:a 2}}] {:+ '({[:a :a] 3}), :- '({[:a :a] 2})})
-(map-commit {:a {:a 2}} {:- {[:a :a] 2}, :+ {[:a :a] 3}})
-
-(st [{:a {:a 2}}] [{:a {:a 3}}])
-(test-commit {:a "apple" :b [1 2 3 4 5 6]} {:b [4 5 6]})
-(map-diff {:a "apple" :b [1 2 3 4 5 6]} {:b [4 5 6]})
-(st [1 2 3 4 5 6] [4 5 6])
-(test-commit {:a "apple" :b [1 2 3 4 5 6]} {:b [4 5 6]})
-(map-commit {:a "apple" :b [1 2 3 4 5 6]} {:- {[:b] '(1 2 3 nil nil nil), [:a] "apple"},
-                                           :+ {[:b] '(nil nil nil nil nil nil)},
-                                           :to-print {:a {:- "apple"}, :b {:- '(1 2 3 nil nil nil), :+ '(nil nil nil nil nil nil)}}})
+  (is (= [{:a 3} 2] (seq-commit [{:a 2} 2] (seq-diff [{:a 2} 2] [{:a 3} 2]))))
+  (is (= (first (:- (seq-diff [{:a 2} 2] [{:a 3} 2])))
+         (:- (map-diff {:a 2} {:a 3}))))
+  (is (= (first (:+ (seq-diff [{:a 2} 2] [{:a 3} 2])))
+         (:+ (map-diff {:a 2} {:a 3})))))
