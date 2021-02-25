@@ -1,13 +1,5 @@
 (ns map-diff)
 
-(defn logit
-  ([m x]
-   (println m x)
-   x)
-  ([x]
-   (println x)
-   x))
-
 (defn- seq-diff
   [a b]
   ((resolve 'seq-diff/seq-diff) a b))
@@ -16,7 +8,7 @@
   [a diff]
   ((resolve 'seq-diff/seq-commit) a diff))
 
-(defn get-into
+(defn- get-into
   "helper for handling embedded maps"
   [in-to base where what]
   (reduce (fn [old [ks w]] (assoc-in old [where (into base ks)] w)) in-to what))
@@ -76,7 +68,7 @@
                  (narrowing a b))]
     (assoc diff :to-print (prepare-print a diff))))
 
-(defn s-or-v?
+(defn- s-or-v?
   [e]
   (or (seq? e) (vector? e)))
 
@@ -90,7 +82,7 @@
                          (dissoc a current))
       :else (assoc a current (reduct (get a current) [(rest ks) v])))))
 
-(defn commit-seqs
+(defn- commit-sequences
   [a-map diff]
   (let [ks (distinct (concat (keys (:+ diff)) (keys (:- diff))))
         pv (:+ diff)
@@ -112,4 +104,4 @@
                   (if (or (seq? v) (vector? v))
                     a
                     (assoc-in a ks v))) sup +)
-        (commit-seqs diff))))
+        (commit-sequences diff))))

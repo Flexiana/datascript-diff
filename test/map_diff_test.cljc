@@ -137,6 +137,8 @@
   (seq-diff-commit-test [:a :b :c] [:c :b :d])
   (seq-diff-commit-test [{:a {:a 2}}] [{:a {:a 3}}])
   (seq-diff-commit-test [{:a {:a 2}}] [{:a {:a 3}}])
+  (seq-diff-commit-test [1  2 {:a {:a 2}} 1 2] [{:a {:a 3}} 1 2])
+  (seq-diff-commit-test [1 2 {:a {:a 3}} 2 1 2] [1 2 {:a {:a 2}} 1 2])
   (seq-diff-commit-test [{:a {:a {:a 1 :b 2}} :b 2 :d {:e 5}}] [{:a {:a {:a 2} :b 2} :b 3}]))
 
 (deftest map-in-seq
