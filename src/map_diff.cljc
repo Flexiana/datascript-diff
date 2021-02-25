@@ -1,5 +1,13 @@
 (ns map-diff)
 
+(defn logit
+  ([m x]
+   (println m x)
+   x)
+  ([x]
+   (println x)
+   x))
+
 (defn- seq-diff
   [a b]
   ((resolve 'seq-diff/seq-diff) a b))
@@ -68,25 +76,40 @@
                  (narrowing a b))]
     (assoc diff :to-print (prepare-print a diff))))
 
+(defn s-or-v?
+  [e]
+  (or (seq? e) (vector? e)))
+
 (defn- reduct
   [a [ks v]]
   (let [current (first ks)]
     (cond
       (empty? ks) a
-      (= 1 (count ks)) (let [va (get a current)]
-                         (if (or (seq? v) (vector? v))
-                           (assoc a current (seq-commit va {:- v}))
-                           (dissoc a current)))
+      (= 1 (count ks)) (if (s-or-v? v)
+                         a
+                         (dissoc a current))
       :else (assoc a current (reduct (get a current) [(rest ks) v])))))
+
+(defn commit-seqs
+  [a-map diff]
+  (let [ks (distinct (concat (keys (:+ diff)) (keys (:- diff))))
+        pv (:+ diff)
+        mv (:- diff)]
+    (reduce (fn [a k]
+              (let [av (get-in a-map k)
+                    p (get pv k)
+                    m (get mv k)]
+                (cond
+                  (every? s-or-v? [av p m]) (assoc-in a-map k (seq-commit av {:+ p :- m}))
+                  :else a)))
+      a-map ks)))
 
 (defn map-commit
   "Applies a diff to a map"
   [a-map {:keys [+ -] :as diff}]
-  (let [sup (reduce reduct a-map -)
-        ext (reduce (fn [a [ks v]]
-                      (let [va (get-in a ks)]
-                        (if (or (seq? v) (vector? v))
-                          (assoc-in a ks (seq-commit va {:+ v}))
-                          (assoc-in a ks v)))) sup +)]
-    ext))
-
+  (let [sup (reduce reduct a-map -)]
+    (-> (reduce (fn [a [ks v]]
+                  (if (or (seq? v) (vector? v))
+                    a
+                    (assoc-in a ks v))) sup +)
+        (commit-seqs diff))))

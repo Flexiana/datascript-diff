@@ -1,9 +1,8 @@
-(ns recursive-ui
-  (:require [recursive-diff :refer [prepare-print
-                                    map-diff
-                                    map-commit]]
-            [nubank.workspaces.card-types.react :refer [react-card]]
-            [nubank.workspaces.core :refer [mount defcard]]
+(ns diff-ui
+  (:require [map-diff :refer [prepare-print
+                              map-diff
+                              map-commit]]
+            [seq-diff]
             [reagent.core :as r]
             [clojure.string :as str]
             [clojure.edn :as edn]))
@@ -27,7 +26,7 @@
   [state]
   (let [[diff to-print commit-on] (try
                                     (diffs @state)
-                                    (catch :default e [{} {}]))
+                                    (catch :default e [{} {} {}]))
         diff-str (if (empty? diff)
                    "No diff calculated"
                    (-> diff
@@ -40,14 +39,25 @@
         applied-on (if (empty? commit-on)
                      "No diff calculated"
                      (str commit-on))]
-    (swap! state assoc :to-print to-print)
-    (swap! state assoc :commit applied-on)
-    (swap! state assoc :diff-str diff-str)))
+    (swap! state assoc
+      :to-print to-print
+      :diff diff
+      :commit applied-on
+      :diff-str diff-str)))
 
 (defn- diff-div
   [color k v]
   [:div {:style {:background color
                  :width      :max-content}} (str k " " v)])
+
+(defn s-v?
+  [x]
+  (or (seq? x) (vector? x)))
+
+(defn no-op
+  [param1]
+  (println param1)
+  param1)
 
 (defn- colorize-core
   [diff depth]
@@ -55,13 +65,13 @@
             (let [add (str (:+ v))
                   rem (str (:- v))]
               (conj acc (cond-> [:div {:style {:padding-left (str (* 0.4 depth) "em")}}]
-                                (and (every? empty? [rem add]) (map? v)) (conj [:div (str k " {")])
-                                (not-empty rem) (conj (diff-div :lightcoral k rem))
-                                (not-empty add) (conj (diff-div :lightgreen k add))
-                                (and (not (map? v)) (every? empty? [rem add])) (conj (diff-div :lightgray k v))
-                                (and (map? v) (every? empty? [rem add])) (conj (conj (colorize-core v (inc depth)) "}"))))))
-          [:div]
-          diff))
+                          (and (every? empty? [rem add]) (map? v)) (conj [:div (str k " {")])
+                          (not-empty rem) (conj (diff-div :lightcoral k rem))
+                          (not-empty add) (conj (diff-div :lightgreen k add))
+                          (and (not (map? v)) (every? empty? [rem add])) (conj (diff-div :lightgray k v))
+                          (and (map? v) (every? empty? [rem add])) (conj (conj (colorize-core v (inc depth)) "}"))))))
+    [:div]
+    diff))
 
 (defn- visual-div
   [text]
@@ -76,13 +86,14 @@
 
 (defn- colorize
   ([diff]
-   (colorize diff 2))
+   (colorize diff 1))
   ([diff depth]
    (let [c (colorize-core diff depth)]
-     (if (not-empty diff) (conj (into (visual-div "{")
-                                      (rest c))
-                                "}")
-                          (visual-div "No diff calculated")))))
+     (if (not-empty diff)
+       (conj (into (visual-div "{")
+                   (rest c))
+         "}")
+       (visual-div "No diff calculated")))))
 
 (defn- text-area
   ([value]
@@ -109,7 +120,6 @@
   [state]
   (let [{:keys [map_1 map_2 to-print]} @state
         colorized (colorize to-print)]
-    (update-diff! state)
     [:div {:style {:margin :auto
                    :width  :max-content}}
      [:table {:style {:margin :auto
@@ -119,6 +129,7 @@
       [:tbody [:tr
                [:td (text-area map_1 (partial on-change state :map_1))]
                [:td (text-area map_2 (partial on-change state :map_2))]
-               [:td (text-area (:diff-str @state))]
+               [:td (text-area (get @state :diff-str "No diff calculated"))]
                [:td {:style {:vertical-align :top}} colorized]
-               [:td (text-area (:commit @state))]]]]]))
+               [:td (text-area (get @state :commit "No diff calculated"))]]]]
+     [:p state]]))

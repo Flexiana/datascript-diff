@@ -2,12 +2,21 @@
   (:require
     [clojure.test :refer :all]
     [seq-diff :refer [seq-diff
+                      common-ordered-part
                       seq-commit]]
     [map-diff :refer [map-commit
                       map-diff
                       narrowing
                       prepare-print
                       expansion]]))
+
+(defn logit
+  ([m x]
+   (println m x)
+   x)
+  ([x]
+   (println x)
+   x))
 
 (deftest step-one
   (is (= {} (expansion {} {})))
@@ -84,10 +93,10 @@
 
 (defn test-commit
   [a b]
-  (is (= b (->> (map-diff a b)
-                (map-commit a))))
-  (is (= a (->> (map-diff b a)
-                (map-commit b)))))
+  (is (= b (->> (logit "diff: " (map-diff a b))
+                (map-commit a))) (format "%s -> %s" a b))
+  (is (= a (->> (logit "diff: " (map-diff b a))
+                (map-commit b))) (format "%s -> %s" b a)))
 
 (deftest apply-diff
   (test-commit {} {})
@@ -102,7 +111,8 @@
   (test-commit {:a {:a 1} :b 2 :d {:e 5}} {:a {:a 2 :b 2} :b 3})
   (test-commit {:a {:a {:a 1 :b 2}} :b 2 :d {:e 5}} {:a {:a {:a 2} :b 2} :b 3})
   (test-commit {:a "apple" :b [1 2 3 4 5 6]} {:b [4 5 6]})
-  (test-commit {:x [{:a 3} 2]} {:x [{:a 3} 2]}))
+  (test-commit {:x [{:a 3} 2]} {:x [{:a 3} 2]})
+  (test-commit {:a [:c :b :d]} {:a [:a :b :c]}))
 
 (deftest print-prepare
   (is (= {:a {:a {:- 1, :+ 2}, :b 2}, :d {:- {:e 5}}, :b {:+ 3}}
@@ -114,6 +124,19 @@
                          :- {[:a :a] 1
                              [:d]    {:e 5}}}))))
 
+(defn st
+  [a b]
+  (is (= b (->> (logit "diff: " (seq-diff a b)) (seq-commit a))) (format "%s -> %s" a b))
+  (is (= a (->> (logit "diff:" (seq-diff b a)) (seq-commit b))) (format "%s -> %s" b a)))
+
+(deftest seq-test)
+(st [:c :b :d] [:a :b :c])
+(st [1 2 3 4 5 6] [4 5 6])
+(common-ordered-part [:a :b :c] [:c :b :d])
+(seq-diff [:a :b :c] [:c :b :d])
+(seq-commit [:a :b :c] {:+ '(:c nil :d), :- '(:a nil :c), :to-print '({:+ :c, :- :a} :b {:- :c, :+ :d})})
+(seq-commit [:a :b :c] {:+ '(:c nil :d), :- '(:a nil :c)})
+
 (deftest map-in-seq
   (is (= (first (:to-print (seq-diff [{:a 2} 2] [{:a 3} 2])))
          (:to-print (map-diff {:a 2} {:a 3}))))
@@ -122,3 +145,25 @@
   (is (= (first (:- (seq-diff [{:a 2} 2] [{:a 3} 2])))
          (:- (map-diff {:a 2} {:a 3}))))
   (is (= [{:a 3} 2] (seq-commit [{:a 2} 2] (seq-diff [{:a 2} 2] [{:a 3} 2])))))
+
+(is (= (first (:- (seq-diff [{:a 2} 2] [{:a 3} 2])))
+       (:- (map-diff {:a 2} {:a 3}))))
+
+(is (= (first (:+ (seq-diff [{:a 2} 2] [{:a 3} 2])))
+       (:+ (map-diff {:a 2} {:a 3}))))
+
+(seq-diff [{:a {:a 2}}] [{:a {:a 3}}])
+(map-diff {:a {:a 2}} {:a {:a 3}})
+
+
+(seq-commit [{:a {:a 2}}] {:+ '({[:a :a] 3}), :- '({[:a :a] 2})})
+(map-commit {:a {:a 2}} {:- {[:a :a] 2}, :+ {[:a :a] 3}})
+
+(st [{:a {:a 2}}] [{:a {:a 3}}])
+(test-commit {:a "apple" :b [1 2 3 4 5 6]} {:b [4 5 6]})
+(map-diff {:a "apple" :b [1 2 3 4 5 6]} {:b [4 5 6]})
+(st [1 2 3 4 5 6] [4 5 6])
+(test-commit {:a "apple" :b [1 2 3 4 5 6]} {:b [4 5 6]})
+(map-commit {:a "apple" :b [1 2 3 4 5 6]} {:- {[:b] '(1 2 3 nil nil nil), [:a] "apple"},
+                                           :+ {[:b] '(nil nil nil nil nil nil)},
+                                           :to-print {:a {:- "apple"}, :b {:- '(1 2 3 nil nil nil), :+ '(nil nil nil nil nil nil)}}})
