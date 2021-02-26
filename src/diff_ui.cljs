@@ -2,33 +2,51 @@
   (:require [map-diff :refer [prepare-print
                               map-diff
                               map-commit]]
-            [seq-diff]
+            [seq-diff :refer [seq-diff
+                              seq-commit]]
             [reagent.core :as r]
             [clojure.string :as str]
             [clojure.edn :as edn]))
 
 (defonce state (r/atom {}))
 
+(defn logit
+  ([x]
+   (println x)
+   x)
+  ([m x]
+   (println m x)
+   x))
+
+(defn commit
+  [a d]
+  (if (map? a)
+    (map-commit a d)
+    (seq-commit a d)))
+
+(defn make-diff
+  [a b]
+  (cond
+    (every? map? [a b]) (map-diff a b)
+    (every? coll? [a b]) (logit (seq-diff a b))
+    :else {}))
+
 (defn- diffs
   [{:keys [map_1 map_2]}]
-  (let [a_map (edn/read-string map_1)
-        b_map (edn/read-string map_2)
-        diff (if (every?  map? [a_map b_map])
-               (map-diff a_map b_map)
-               {})
-        to-print (if (empty? diff)
-                   ""
-                   (prepare-print a_map diff))
-        comm (if (empty? diff)
-               {}
-               (map-commit a_map diff))]
-    [diff to-print comm]))
+  (let [a (edn/read-string map_1)
+        b (edn/read-string map_2)
+
+        difference (make-diff a b)]
+    (if (empty? difference)
+      [{} "" {}]
+      [difference (:to-print difference) (commit a difference)])))
 
 (defn- update-diff!
   [state]
-  (let [[diff to-print commit-on] (try
-                                    (diffs @state)
-                                    (catch :default e [{} "" {}]))
+  (let [[diff to-print commit] (try
+                                 (swap! state dissoc :error)
+                                 (diffs @state)
+                                 (catch :default e (do (swap! state assoc :error e) [{} "" {}])))
         diff-str (if (empty? diff)
                    "No diff calculated"
                    (-> diff
@@ -38,13 +56,13 @@
                        (str/replace #"\n+" "\n")
                        rest
                        str/join))
-        applied-on (if (empty? commit-on)
-                     "No diff calculated"
-                     (str commit-on))]
+        commit (if (empty? commit)
+                 "No diff calculated"
+                 (str commit))]
     (swap! state assoc
       :to-print to-print
       :diff diff
-      :commit applied-on
+      :commit commit
       :diff-str diff-str)))
 
 (defn- diff-div
@@ -61,9 +79,25 @@
   (println param1)
   param1)
 
+(defn color-seq
+  [s]
+  (logit s)
+  [:div [:table
+         [:tbody
+          (into [:tr]
+                (for [c s]
+                  [:td  (get c :- (str c))]))
+          (into [:tr]
+                (for [c s]
+                  [:td  (:+ c)]))
+          (into [:tr]
+                (for [c s]
+                  [:td  (:- c)]))]]])
+
 (defn- colorize-core
   [diff depth]
-  (reduce (fn [acc [k v]]
+  (letfn [(for-map
+            [acc [k v]]
             (let [add (str (:+ v))
                   rem (str (:- v))]
               (conj acc (cond-> [:div {:style {:padding-left (str (* 0.4 depth) "em")}}]
@@ -71,9 +105,10 @@
                           (not-empty rem) (conj (diff-div :lightcoral k rem))
                           (not-empty add) (conj (diff-div :lightgreen k add))
                           (and (not (map? v)) (every? empty? [rem add])) (conj (diff-div :lightgray k v))
-                          (and (map? v) (every? empty? [rem add])) (conj (conj (colorize-core v (inc depth)) "}"))))))
-    [:div]
-    diff))
+                          (and (map? v) (every? empty? [rem add])) (conj (conj (colorize-core v (inc depth)) "}"))))))]
+    (if (map? diff)
+      (reduce for-map [:div] diff)
+      (color-seq diff))))
 
 (defn- visual-div
   [text]
@@ -87,15 +122,13 @@
                  :height       "380px"}} text])
 
 (defn- colorize
-  ([diff]
-   (colorize diff 1))
-  ([diff depth]
-   (let [c (colorize-core diff depth)]
-     (if (not-empty diff)
-       (conj (into (visual-div "{")
-                   (rest c))
-         "}")
-       (visual-div "No diff calculated")))))
+  [diff]
+  (let [c (colorize-core diff 1)]
+    (if (not-empty diff)
+      (conj (into (visual-div "{")
+                  (rest c))
+        "}")
+      (visual-div "No diff calculated"))))
 
 (defn- text-area
   ([value]
