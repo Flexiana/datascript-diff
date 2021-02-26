@@ -28,25 +28,25 @@
   [a b]
   (cond
     (every? map? [a b]) (map-diff a b)
-    (every? coll? [a b]) (logit (seq-diff a b))
+    (every? coll? [a b]) (seq-diff a b)
     :else {}))
 
 (defn- diffs
-  [{:keys [map_1 map_2]}]
-  (let [a (edn/read-string map_1)
-        b (edn/read-string map_2)
+  [{:keys [a-input b-input]}]
+  (let [a (edn/read-string a-input)
+        b (edn/read-string b-input)
 
         difference (make-diff a b)]
     (if (empty? difference)
-      [{} "" {}]
-      [difference (:to-print difference) (commit a difference)])))
+      [{} {} "" {}]
+      [a difference (commit a difference)])))
 
 (defn- update-diff!
   [state]
-  (let [[diff to-print commit] (try
-                                 (swap! state dissoc :error)
-                                 (diffs @state)
-                                 (catch :default e (do (swap! state assoc :error e) [{} "" {}])))
+  (let [[a-value diff commit] (try
+                                (swap! state dissoc :error)
+                                (diffs @state)
+                                (catch :default e (do (swap! state assoc :error e) [{} {} "" {}])))
         diff-str (if (empty? diff)
                    "No diff calculated"
                    (-> diff
@@ -60,15 +60,15 @@
                  "No diff calculated"
                  (str commit))]
     (swap! state assoc
-      :to-print to-print
+      :a-value a-value
       :diff diff
       :commit commit
       :diff-str diff-str)))
 
 (defn- diff-div
   [color k v]
-  [:div {:style {:background color
-                 :width      :max-content}} (str k " " v)])
+  [:a  (str k " ") [:a {:style {:background color
+                                :width      :max-content}} v]])
 
 (defn s-v?
   [x]
@@ -79,36 +79,60 @@
   (println param1)
   param1)
 
-(defn color-seq
-  [s]
-  (logit s)
-  [:div [:table
-         [:tbody
-          (into [:tr]
-                (for [c s]
-                  [:td  (get c :- (str c))]))
-          (into [:tr]
-                (for [c s]
-                  [:td  (:+ c)]))
-          (into [:tr]
-                (for [c s]
-                  [:td  (:- c)]))]]])
+(defn but
+  [x y]
+  (and (not x) y))
+
+(defn seq-merge
+  [v]
+  (map (fn [p m]
+         (cond-> {}
+           p (assoc :+ p)
+           m (assoc :- m))) (:+ v) (:- v)))
+
+()
 
 (defn- colorize-core
-  [diff depth]
-  (letfn [(for-map
+  [a-value diff depth]
+  (letfn [(color-seq
+            [a s]
+            [:div [:div {:style {:overflow     :auto
+                                 :border-style :solid
+                                 :border-width :thin
+                                 :border-color :gray}}
+                   [:table {:style {:border-spacing 0
+                                    :cellpadding "0px"}}
+                    [:tbody
+                     (into [:tr]
+                           (for [c s]
+                             [:td
+                              (cond
+                                (:- c) [:a {:style {:background :lightcoral
+                                                    :border-spacing "0px"}} (str (:- c))]
+                                (not (:+ c)) [:a {:style {:background :lightgrey
+                                                          :border-spacing "0px"}} (str c)])]))
+                                    ;(map? c)  (reduce color-map [:div] (logit c)))]))
+                     (into [:tr]
+                           (for [c s]
+                             [:td (cond
+                                    (:+ c) [:a {:style {:background :lightgreen
+                                                        :border-spacing "0px"}} (str (:+ c))]
+                                    (not (:- c)) "")]))]]]])
+          (color-map
             [acc [k v]]
             (let [add (str (:+ v))
                   rem (str (:- v))]
               (conj acc (cond-> [:div {:style {:padding-left (str (* 0.4 depth) "em")}}]
                           (and (every? empty? [rem add]) (map? v)) (conj [:div (str k " {")])
+                          (and (every? empty? [rem add]) (coll? v)) (conj [:div (str k " (")])
+                          (but (every? map? [(:- v) (:+ v)]) (every? coll? [(:- v) (:+ v)])) (conj (diff-div " " k (colorize-core a-value (seq-merge v) (inc depth))) "}")
                           (not-empty rem) (conj (diff-div :lightcoral k rem))
                           (not-empty add) (conj (diff-div :lightgreen k add))
-                          (and (not (map? v)) (every? empty? [rem add])) (conj (diff-div :lightgray k v))
-                          (and (map? v) (every? empty? [rem add])) (conj (conj (colorize-core v (inc depth)) "}"))))))]
-    (if (map? diff)
-      (reduce for-map [:div] diff)
-      (color-seq diff))))
+                          (and (not (map? v)) (every? empty? [rem add])) (conj (diff-div :lightgray k (str v)))
+                          (and (map? v) (every? empty? [rem add])) (conj (conj (colorize-core a-value {:to-print v} (inc depth)) "}"))))))]
+    (if (map? (:to-print diff))
+      (reduce color-map [:div] (:to-print diff))
+      (color-seq a-value (:to-print diff)))))
 
 (defn- visual-div
   [text]
@@ -122,12 +146,11 @@
                  :height       "380px"}} text])
 
 (defn- colorize
-  [diff]
-  (let [c (colorize-core diff 1)]
+  [{:keys [a-value diff]}]
+  (let [c (colorize-core a-value diff 1)]
     (if (not-empty diff)
-      (conj (into (visual-div "{")
-                  (rest c))
-        "}")
+      (into (visual-div "")
+            (rest c))
       (visual-div "No diff calculated"))))
 
 (defn- text-area
@@ -153,8 +176,8 @@
 
 (defn diff
   [state]
-  (let [{:keys [map_1 map_2 to-print]} @state
-        colorized (colorize to-print)]
+  (let [{:keys [a-input b-input]} @state
+        colorized (colorize @state)]
     [:div {:style {:margin :auto
                    :width  :max-content}}
      [:table {:style {:margin :auto
@@ -162,9 +185,9 @@
       [:thead [:tr
                [:th "Map A"] [:th "Map B"] [:th "Calculated diff"] [:th "Visual diff"] [:th "Commit diff on Map A"]]]
       [:tbody [:tr
-               [:td (text-area map_1 (partial on-change state :map_1))]
-               [:td (text-area map_2 (partial on-change state :map_2))]
+               [:td (text-area a-input (partial on-change state :a-input))]
+               [:td (text-area b-input (partial on-change state :b-input))]
                [:td (text-area (get @state :diff-str "No diff calculated"))]
                [:td {:style {:vertical-align :top}} colorized]
                [:td (text-area (get @state :commit "No diff calculated"))]]]]
-     [:p state]]))
+     [:p (str (get-in @state [:diff :to-print]))]]))
