@@ -13,20 +13,22 @@
   [{:keys [map_1 map_2]}]
   (let [a_map (edn/read-string map_1)
         b_map (edn/read-string map_2)
-        diff (if (and (map? a_map) (map? b_map))
+        diff (if (every?  map? [a_map b_map])
                (map-diff a_map b_map)
                {})
         to-print (if (empty? diff)
                    ""
                    (prepare-print a_map diff))
-        comm (map-commit a_map diff)]
+        comm (if (empty? diff)
+               {}
+               (map-commit a_map diff))]
     [diff to-print comm]))
 
 (defn- update-diff!
   [state]
   (let [[diff to-print commit-on] (try
                                     (diffs @state)
-                                    (catch :default e [{} {} {}]))
+                                    (catch :default e [{} "" {}]))
         diff-str (if (empty? diff)
                    "No diff calculated"
                    (-> diff

@@ -23,9 +23,9 @@
                 (and (map? a-value) (map? v)) (merge acc (let [{:keys [+ -]} (expansion a-value v)]
                                                            (-> (get-into acc vector-key :- -)
                                                                (get-into vector-key :+ +))))
-                (and (coll? a-value) (coll? v)) (let [{:keys [+ -]} (seq-diff a-value v)]
-                                                  (-> (update-in acc [:- vector-key] concat -)
-                                                      (update-in [:+ vector-key] concat +)))
+                (and (coll? a-value) (coll? v) (not= a-value v)) (let [{:keys [+ -]} (seq-diff a-value v)]
+                                                                   (-> (update-in acc [:- vector-key] concat -)
+                                                                       (update-in [:+ vector-key] concat +)))
                 (nil? a-value) (assoc-in acc [:+ vector-key] v)
                 (not= v a-value) (-> (assoc-in acc [:- vector-key] a-value)
                                      (assoc-in [:+ vector-key] v))
