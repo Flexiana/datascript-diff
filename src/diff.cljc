@@ -6,45 +6,18 @@
             [matcher-combinators.test :refer [match?]]
             [clojure.edn :as edn]))
 
-(defn make-selector [selector value-want]
-  (cond (map? value-want)  (reduce (fn [selector [k v]]
-                                     (cond (map? v)  (conj selector (make-selector [k] v))
-                                           (coll? v) (conj selector (make-selector [k] v))
-                                           :else     (conj selector (make-selector selector  k))))
-                                   selector
-                                   value-want)
-        (coll? value-want) (let [vec-acc       (count value-want)
-                                 range-vec-acc (range vec-acc)]
+(defn all-paths-aux [table path]
+  (letfn [(hash-f [[key val]] (all-paths-aux val (conj path key)))
+          (vect-f [idx val] (all-paths-aux val (conj path idx)))]
+    (cond
+      (and (map? table)    (not (empty? table))) (into [] (apply concat (map hash-f table)))
+      (and (vector? table) (not (empty? table))) (into [] (apply concat (map-indexed vect-f table)))
+      :else                                      [path])))
 
-                             (if (empty? range-vec-acc)
-                               (conj selector [0])
-                               (reduce (fn [selector v]
-                                         (let [vec-val  (nth value-want v)
-                                               next-sel (make-selector selector v)]
-                                           (cond (coll? vec-val)  (conj selector
-                                                                        (make-selector next-sel vec-val))
-                                                 (coll? next-sel) (conj selector next-sel)
-                                                 :else            (do (prn [next-sel])
-                                                                      (conj selector next-sel)))))
-                                       selector
-                                       range-vec-acc)))
-        :else (cond (empty? selector) (conj selector
-                                            value-want)
-                    :else             [value-want])))
+(defn all-paths [table]
+  (all-paths-aux table []))
 
-(defn unwrap-selector [m]
-  (map (fn [[f & r :as v]]
-         (let [[hd & tl] r]
-           (cond
-             (and (coll? r)
-                  (nil? tl)) (do
-                               (prn [f r hd tl])
-                               (concat [f] hd))
-             (nil? r)        v)))
-       (make-selector [] m)))
 
-(defn map-differences [have want]
-  (map make-selector have))
 
 (deftest map-differences-test
   (is (match? {::have {}
