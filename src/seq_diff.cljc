@@ -62,13 +62,13 @@
                    (empty? common) (recur (vec (rest av)) (vec (rest bv)) [] (conj acc (cond
                                                                                          (every? map? [(first av) (first bv)]) (map-diff (first av) (first bv))
                                                                                          (every? coll? [(first av) (first bv)]) (seq-diff (first av) (first bv))
-                                                                                         :else {:- (first av) :+ (first bv)})))
+                                                                                         :else (if (= (first av) (first bv)) (first av) {:- (first av) :+ (first bv)}))))
                    (< a-distance b-distance) (recur av (vec (rest bv)) common (conj acc {:+ (first bv)}))
                    (> a-distance b-distance) (recur (vec (rest av)) bv common (conj acc {:- (first av)}))
                    (and (= a-distance b-distance) (every? map? [(first av) (first bv)])) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (map-diff (first av) (first bv))))
                    (and (= a-distance b-distance) (every? coll? [(first av) (first bv)])) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (seq-diff (first av) (first bv))))
                    (= 0 a-distance b-distance) (recur (vec (rest av)) (vec (rest bv)) (vec (rest common)) (conj acc (first common)))
-                   (= a-distance b-distance) (recur (vec (rest av)) (vec (rest bv)) common (conj acc {:+ (first bv) :- (first av)})))))]
+                   (= a-distance b-distance) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (if (= (first av) (first bv)) (first av) {:- (first av) :+ (first bv)}))))))]
     {:+        (map :+ diff)
      :-        (map :- diff)
      :to-print (map #(get % :to-print %) diff)}))
