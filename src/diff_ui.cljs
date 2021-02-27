@@ -10,13 +10,13 @@
 
 (defonce state (r/atom {}))
 
-#_(defn logit
-    ([x]
-     (println x)
-     x)
-    ([m x]
-     (println m x)
-     x))
+(defn logit
+  ([x]
+   (println x)
+   x)
+  ([m x]
+   (println m x)
+   x))
 
 (defn commit
   [a d]
@@ -81,86 +81,94 @@
            acc []]
       (cond (empty? e) acc
             (nil? (first e)) (recur (rest e) (rest original) (conj acc (first original)))
+            (map? (:- (first e))) (recur (rest e) (rest original) (conj acc (prepare-print (first original) (first e))))
             (:- (first e)) (recur (rest e) (rest original) (conj acc (first e)))
             :else (recur (rest e) original (conj acc (first e)))))))
+
+(defn table-row
+  []
+  ^{:key (gensym)} [:tr
+                    {:style {:border-bottom   "5px"
+                             :border-top      "5px"
+                             :border-style    :solid
+                             :text-align      :center
+                             :border-collapse :collapse}}])
+
+(defn table
+  [body]
+  [:div [:div {:style {:overflow     :auto
+                       :border-style :solid
+                       :border-width :thin
+                       :border-color :gray}}
+         [:table {:style {:cellpadding "0px"}}
+          [:tbody body]]]])
+
+(defn td-border
+  ([]
+   ^{:key (gensym)} [:td {:style {:border-bottom :solid
+                                  :border-width  :thin}}])
+  ([color content]
+   ^{:key (gensym)} [:td {:style {:border-bottom :solid
+                                  :border-width  :thin
+                                  :background    color}} content]))
+
+(defn td
+  ([]
+   ^{:key (gensym)} [:td])
+  ([content]
+   ^{:key (gensym)} [:td content])
+  ([color content]
+   ^{:key (gensym)} [:td {:style {:background color}} content]))
 
 (defn- colorize-core
   [a-value diff]
   (letfn [(color-seq
             [s]
-            [:div [:div {:style {:overflow     :auto
-                                 :border-style :solid
-                                 :border-width :thin
-                                 :border-color :gray}}
-                   [:table {:style {:border-spacing 0
-                                    :cellpadding    "0px"}}
-                    [:tbody
-                     [:tr [:td "("]
-                      (into [:tr {:style {:border-bottom   "5px"
-                                          :border-top      "5px"
-                                          :border-style    :solid
-                                          :border-collapse :collapse}}]
-                            (for [c s]
-                              [:td
-                               (cond
-                                 (and (coll? c) (nil? (:- c)) (nil? (:+ c))) (colorize-core (a-value (.indexOf (vec s) c)) {:to-print c})
-                                 (:- c) [:a {:style {:background     :lightcoral
-                                                     :border-spacing "0px"}} (str (:- c))]
-                                 (not (:+ c)) [:a {:style {:background     :lightgrey
-                                                           :border-spacing "0px"}} (str c)])]))
-                      (into [:tr]
-                            (for [c s]
-                              [:td (cond
-                                     (:+ c) [:a {:style {:background     :lightgreen
-                                                         :border-spacing "0px"}} (str (:+ c))]
-                                     (not (:- c)) "")]))
-                      [:td ")"]]]]]])
+            (table
+              ^{:key (gensym)}
+              [:tr (td "(")
+               (into (table-row)
+                     (for [c s]
+                       (cond
+                         (and (coll? c) (nil? (:- c)) (nil? (:+ c))) (td (colorize-core (a-value (.indexOf (vec s) c)) {:to-print c}))
+                         (and (coll? c) (map? (:- c)) (map? (:+ c))) (td (colorize-core (a-value (.indexOf (vec s) c)) {:to-print c}))
+                         (:- c) (td :lightcoral (str (:- c)))
+                         (not (:+ c)) (td :lightgrey (str c))
+                         :else (td))))
+               (into (table-row)
+                     (for [c s]
+                       (cond
+                         (:+ c) (td :lightgreen (str (:+ c)))
+                         :else (td))))
+               (td ")")]))
           (color-map2
             [a m]
-            [:div [:div {:style {:overflow     :auto
-                                 :border-style :solid
-                                 :border-width :thin
-                                 :border-color :gray}}
-                   [:table {:style {:border-spacing 0
-                                    :cellpadding    "0px"}}
-                    [:tbody
-                     [:tr [:td "{"]
-                      (mapcat distinct
-                              (for [[k v] m]
-                                [(into [:tr {:style {:border-bottom   "5px"
-                                                     :border-top      "5px"
-                                                     :border-style    :solid
-                                                     :border-collapse :collapse}}]
-                                       (cond
-                                         (and (map? v) (every? coll? [(:- v) (:+ v)])) [[:td (str k)] [:td (colorize-core (get a k) {:to-print (seq-merge (get a-value k) v)})]]
-                                         (and (:- v) (:+ v)) [[:td (str k)]
-                                                              [:td {:style {:background :lightcoral}} (str (:- v))]]
-                                         (:- v) [[:td {:style {:background    :lightcoral
-                                                               :border-bottom :solid
-                                                               :border-width  :thin}} (str k)]
-                                                 [:td {:style {:background    :lightcoral
-                                                               :border-bottom :solid
-                                                               :border-width  :thin}} (str (:- v))]]
+            (table
+              ^{:key (gensym)}
+              [:tr (td "{")
+               (mapcat distinct
+                       (for [[k v] m]
+                         [(into (table-row)
+                                (cond
+                                  (and (map? v) (every? coll? [(:- v) (:+ v)])) [(td-border :white (str k))
+                                                                                 (td :white (colorize-core (get a k) {:to-print (seq-merge (get a-value k) v)}))]
+                                  (and (:- v) (:+ v)) [(td :white (str k))
+                                                       (td :lightcoral (str (:- v)))]
+                                  (:- v) [(td-border :lightcoral (str k))
+                                          (td-border :lightcoral (str (:- v)))]
+                                  (and (map? v) (every? nil? [(:- v) (:+ v)])) [(td-border :while (str k))
+                                                                                (td :white (colorize-core (get a k) {:to-print v}))]
+                                  (every? nil? [(:- v) (:+ v)]) [(td-border :lightgrey (str k))
+                                                                 (td-border :lightgrey (str v))]))
+                          (into (table-row)
+                                (cond
+                                  (and (map? v) (every? coll? [(:- v) (:+ v)])) [[:td]]
+                                  (and (nil? (:- v)) (:+ v)) [(td :lightgreen (str k))
+                                                              (td :lightgreen (str (:+ v)))]
+                                  (:+ v) [(td-border)
+                                          (td-border :lightgreen (str (:+ v)))]))]))
 
-                                         (and (map? v) (every? nil? [(:- v) (:+ v)])) [[:td (str k)] [:td (colorize-core (get a k) {:to-print v})]]
-                                         (every? nil? [(:- v) (:+ v)]) [[:td {:style {:background    :lightgrey
-                                                                                      :border-bottom :solid
-                                                                                      :border-width  :thin}} (str k)]
-                                                                        [:td {:style {:background    :lightgrey
-                                                                                      :border-bottom :solid
-                                                                                      :border-width  :thin}} (str v)]]))
-                                 (into [:tr]
-                                       (cond
-                                         (and (map? v) (every? coll? [(:- v) (:+ v)])) [[:td]]
-                                         (and (nil? (:- v)) (:+ v)) [[:td {:style {:background :lightgreen}} (str k)]
-                                                                     [:td {:style {:background :lightgreen}} (str (:+ v))]]
-                                         (:+ v) [[:td {:style {:border-bottom :solid
-                                                               :border-width  :thin}}]
-                                                 [:td {:style {:border-bottom :solid
-                                                               :border-width  :thin
-                                                               :background    :lightgreen}} (str (:+ v))]]))]))
-                      [:td "}"]]]]]])]
-
+               (td "}")]))]
     (if
       (map? (:to-print diff))
       (color-map2 a-value (:to-print diff))
@@ -214,12 +222,16 @@
                    :width  :max-content}}
      [:table {:style {:margin :auto
                       :width  :max-content}}
-      [:thead [:tr
-               [:th "Map A"] [:th "Map B"] [:th "Calculated diff"] [:th "Visual diff"] [:th "Commit diff on Map A"]]]
+      [:thead ^{:key (gensym)} [:tr
+                                ^{:key (gensym)} [:th "Map A"]
+                                ^{:key (gensym)} [:th "Map B"]
+                                ^{:key (gensym)} [:th "Calculated diff"]
+                                ^{:key (gensym)} [:th "Visual diff"]
+                                ^{:key (gensym)} [:th "Commit diff on Map A"]]]
       [:tbody [:tr
                [:td (text-area a-input (partial on-change state :a-input))]
                [:td (text-area b-input (partial on-change state :b-input))]
                [:td (text-area (get @state :diff-str "No diff calculated"))]
                [:td {:style {:vertical-align :top}} colorized]
                [:td (text-area (get @state :commit "No diff calculated"))]]]]
-     [:p (str (get-in @state [:diff :to-print]))]]))
+     [:p (str (:error @state))]]))
