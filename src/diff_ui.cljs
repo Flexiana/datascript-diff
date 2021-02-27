@@ -16,11 +16,17 @@
     (map-commit a d)
     (seq-commit a d)))
 
+(defn but
+  [x y]
+  (and (not x) y))
+
 (defn make-diff
   [a b]
   (cond
     (every? map? [a b]) (map-diff a b)
-    (every? coll? [a b]) (seq-diff a b)
+    (but
+      (some map? [a b])
+      (every? coll? [a b])) (seq-diff a b)
     :else {}))
 
 (defn- diffs
@@ -38,7 +44,9 @@
   (let [[a-value diff commit] (try
                                 (swap! state dissoc :error)
                                 (diffs @state)
-                                (catch :default e (do (swap! state assoc :error e) [{} {} "" {}])))
+                                (catch :default e
+                                  (swap! state assoc :error (.-message e))
+                                  [{} {} {}]))
         diff-str (if (empty? diff)
                    "No diff calculated"
                    (-> diff
@@ -160,7 +168,7 @@
                                                                  (td-border :lightgrey (str v))]))
                           (into (table-row)
                                 (cond
-                                  (and (map? v) (every? coll? [(:- v) (:+ v)])) [[:td]]
+                                  (and (map? v) (every? coll? [(:- v) (:+ v)])) [(td)]
                                   (and (nil? (:- v)) (:+ v)) [(td :lightgreen (str k))
                                                               (td :lightgreen (str (:+ v)))]
                                   (:+ v) [(td-border)
@@ -219,18 +227,18 @@
         colorized (colorize a-value diff)]
     [:div {:style {:margin :auto
                    :width  :max-content}}
-     [:table {:style {:margin :auto
-                      :width  :max-content}}
-      [:thead ^{:key (gensym)} [:tr
-                                ^{:key (gensym)} [:th "Map A"]
-                                ^{:key (gensym)} [:th "Map B"]
-                                ^{:key (gensym)} [:th "Calculated diff"]
-                                ^{:key (gensym)} [:th "Visual diff"]
-                                ^{:key (gensym)} [:th "Commit diff on Map A"]]]
+     [:table#main {:style {:margin :auto
+                           :width  :max-content}}
+      [:thead [:tr
+               [:th "Map A"]
+               [:th "Map B"]
+               [:th "Calculated diff"]
+               [:th "Visual diff"]
+               [:th "Commit diff on Map A"]]]
       [:tbody [:tr
                [:td (text-area a-input (partial on-change state :a-input))]
                [:td (text-area b-input (partial on-change state :b-input))]
                [:td (text-area (get @state :diff-str "No diff calculated"))]
                [:td {:style {:vertical-align :top}} colorized]
                [:td (text-area (get @state :commit "No diff calculated"))]]]]
-     [:p (str (:error @state))]]))
+     [:p (str (get @state :error " "))]]))
