@@ -10,13 +10,13 @@
 
 (defonce state (r/atom {}))
 
-(defn logit
-  ([x]
-   (println x)
-   x)
-  ([m x]
-   (println m x)
-   x))
+#_(defn logit
+    ([x]
+     (println x)
+     x)
+    ([m x]
+     (println m x)
+     x))
 
 (defn commit
   [a d]
@@ -70,27 +70,12 @@
   [:div (str k " ") [:a {:style {:background color
                                  :width      :max-content}} v]])
 
-(defn s-v?
-  [x]
-  (or (seq? x) (vector? x)))
-
-(defn no-op
-  [param1]
-  (println param1)
-  param1)
-
-(defn but
-  [x y]
-  (and (not x) y))
-
 (defn seq-merge
   [a v]
   (let [empty-diff (map (fn [p m]
                           (cond-> nil
                             p (assoc :+ p)
                             m (assoc :- m))) (:+ v) (:- v))]
-    (logit "e-d" empty-diff)
-    (logit "a" a)
     (loop [e empty-diff
            original a
            acc []]
@@ -103,7 +88,6 @@
   [a-value diff]
   (letfn [(color-seq
             [s]
-            (logit s)
             [:div [:div {:style {:overflow     :auto
                                  :border-style :solid
                                  :border-width :thin
@@ -148,7 +132,7 @@
                                                      :border-style    :solid
                                                      :border-collapse :collapse}}]
                                        (cond
-                                         (and (map? v) (every? coll? [(:- v) (:+ v)])) [[:td (str k)] [:td (logit "inner table" (colorize-core (logit "inner value" (get a k)) (logit "diff" {:to-print (seq-merge (get a-value k) v)})))]]
+                                         (and (map? v) (every? coll? [(:- v) (:+ v)])) [[:td (str k)] [:td (colorize-core (get a k) {:to-print (seq-merge (get a-value k) v)})]]
                                          (and (:- v) (:+ v)) [[:td (str k)]
                                                               [:td {:style {:background :lightcoral}} (str (:- v))]]
                                          (:- v) [[:td {:style {:background    :lightcoral
