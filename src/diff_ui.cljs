@@ -10,14 +10,6 @@
 
 (defonce state (r/atom {}))
 
-(defn logit
-  ([x]
-   (println x)
-   x)
-  ([m x]
-   (println m x)
-   x))
-
 (defn commit
   [a d]
   (if (map? a)
@@ -87,12 +79,13 @@
 
 (defn table-row
   []
-  ^{:key (gensym)} [:tr
-                    {:style {:border-bottom   "5px"
-                             :border-top      "5px"
-                             :border-style    :solid
-                             :text-align      :center
-                             :border-collapse :collapse}}])
+  ^{:key (gensym)}
+  [:tr
+   {:style {:border-bottom   "5px"
+            :border-top      "5px"
+            :border-style    :solid
+            :text-align      :center
+            :border-collapse :collapse}}])
 
 (defn table
   [body]
@@ -105,23 +98,28 @@
 
 (defn td-border
   ([]
-   ^{:key (gensym)} [:td {:style {:border-bottom :solid
-                                  :border-width  :thin}}])
+   ^{:key (gensym)}
+   [:td {:style {:border-bottom :solid
+                 :border-width  :thin}}])
   ([color content]
-   ^{:key (gensym)} [:td {:style {:border-bottom :solid
-                                  :border-width  :thin
-                                  :background    color}} content]))
+   ^{:key (gensym)}
+   [:td {:style {:border-bottom :solid
+                 :border-width  :thin
+                 :background    color}} content]))
 
 (defn td
   ([]
-   ^{:key (gensym)} [:td])
+   ^{:key (gensym)}
+   [:td])
   ([content]
-   ^{:key (gensym)} [:td content])
+   ^{:key (gensym)}
+   [:td content])
   ([color content]
-   ^{:key (gensym)} [:td {:style {:background color}} content]))
+   ^{:key (gensym)}
+   [:td {:style {:background color}} content]))
 
 (defn- colorize-core
-  [a-value diff]
+  [a-value diff-str]
   (letfn [(color-seq
             [s]
             (table
@@ -130,8 +128,8 @@
                (into (table-row)
                      (for [c s]
                        (cond
-                         (and (coll? c) (nil? (:- c)) (nil? (:+ c))) (td (colorize-core (a-value (.indexOf (vec s) c)) {:to-print c}))
-                         (and (coll? c) (map? (:- c)) (map? (:+ c))) (td (colorize-core (a-value (.indexOf (vec s) c)) {:to-print c}))
+                         (and (coll? c) (nil? (:- c)) (nil? (:+ c))) (td (colorize-core (a-value (.indexOf (vec s) c)) c))
+                         (and (coll? c) (map? (:- c)) (map? (:+ c))) (td (colorize-core (a-value (.indexOf (vec s) c)) c))
                          (:- c) (td :lightcoral (str (:- c)))
                          (not (:+ c)) (td :lightgrey (str c))
                          :else (td))))
@@ -151,13 +149,13 @@
                          [(into (table-row)
                                 (cond
                                   (and (map? v) (every? coll? [(:- v) (:+ v)])) [(td-border :white (str k))
-                                                                                 (td :white (colorize-core (get a k) {:to-print (seq-merge (get a-value k) v)}))]
+                                                                                 (td :white (colorize-core (get a k) (seq-merge (get a-value k) v)))]
                                   (and (:- v) (:+ v)) [(td :white (str k))
                                                        (td :lightcoral (str (:- v)))]
                                   (:- v) [(td-border :lightcoral (str k))
                                           (td-border :lightcoral (str (:- v)))]
                                   (and (map? v) (every? nil? [(:- v) (:+ v)])) [(td-border :while (str k))
-                                                                                (td :white (colorize-core (get a k) {:to-print v}))]
+                                                                                (td :white (colorize-core (get a k) v))]
                                   (every? nil? [(:- v) (:+ v)]) [(td-border :lightgrey (str k))
                                                                  (td-border :lightgrey (str v))]))
                           (into (table-row)
@@ -170,9 +168,9 @@
 
                (td "}")]))]
     (if
-      (map? (:to-print diff))
-      (color-map2 a-value (:to-print diff))
-      (color-seq (:to-print diff)))))
+      (map? diff-str)
+      (color-map2 a-value diff-str)
+      (color-seq diff-str))))
 
 (defn- visual-div
   [text]
@@ -186,9 +184,10 @@
                  :height       "380px"}} text])
 
 (defn- colorize
-  [{:keys [a-value diff]}]
-  (let [c (colorize-core a-value diff)]
-    (if (not-empty diff)
+  [a-value diff]
+  (let [diff-str (:to-print diff)
+        c (colorize-core a-value diff-str)]
+    (if (not-empty diff-str)
       (into (visual-div "")
             (rest c))
       (visual-div "No diff calculated"))))
@@ -216,8 +215,8 @@
 
 (defn diff
   [state]
-  (let [{:keys [a-input b-input]} @state
-        colorized (colorize @state)]
+  (let [{:keys [a-input b-input a-value diff]} @state
+        colorized (colorize a-value diff)]
     [:div {:style {:margin :auto
                    :width  :max-content}}
      [:table {:style {:margin :auto
