@@ -102,7 +102,7 @@
 (defn- colorize-core
   [a-value diff depth]
   (letfn [(color-seq
-            [a s]
+            [s]
             (logit s)
             [:div [:div {:style {:overflow     :auto
                                  :border-style :solid
@@ -142,12 +142,57 @@
                           (but (every? coll? [mv pv]) mv) (conj (diff-div :lightcoral k rem))
                           (but (every? coll? [mv pv]) pv) (conj (diff-div :lightgreen k add))
                           (and (not (map? v)) (every? nil? [mv pv])) (conj (diff-div :lightgray k (str v)))
-                          (logit "map-in-map" (and (map? v) (every? nil? [mv pv]))) (conj (str k) (colorize-core (get a-value k) {:to-print v} (inc depth)))))))]
+                          (logit "map-in-map" (and (map? v) (every? nil? [mv pv]))) (conj (str k) (colorize-core (get a-value k) {:to-print v} (inc depth)))))))
+          (color-map2
+            [a m]
+            [:div [:div {:style {:overflow     :auto
+                                 :border-style :solid
+                                 :border-width :thin
+                                 :border-color :gray}}
+                   [:table {:style {:border-spacing 0
+                                    :cellpadding    "0px"}}
+                    [:tbody
+                     (mapcat distinct
+                             (for [[k v] m]
+                               [(into [:tr {:style {:border-bottom "5px"
+                                                    :border-top "5px"
+                                                    :border-style :solid
+                                                    :border-collapse :collapse}}]
+                                      (cond
+                                        (and (:- v) (:+ v)) [(repeat depth [:td])
+                                                             [:td  (str k)]
+                                                             [:td {:style {:background :lightcoral}} (str (:- v))]]
+                                        (:- v) [(repeat depth [:td])
+                                                [:td {:style {:background :lightcoral
+                                                              :border-bottom :solid
+                                                              :border-width :thin}} (str k)]
+                                                [:td {:style {:background :lightcoral
+                                                              :border-bottom :solid
+                                                              :border-width :thin}} (str (:- v))]]
+                                        (every? nil? [(:- v) (:+ v)]) [(repeat depth [:td])
+                                                                       [:td {:style {:background :lightgrey
+                                                                                     :border-bottom :solid
+                                                                                     :border-width :thin}} (str k)]
+                                                                       [:td {:style {:background :lightgrey
+                                                                                     :border-bottom :solid
+                                                                                     :border-width :thin}} (str v)]]))
+                                (into [:tr]
+                                      (cond
+                                        (and (nil? (:- v)) (:+ v)) [(repeat depth [:td])
+                                                                    [:td {:style {:background :lightgreen}} (str k)]
+                                                                    [:td {:style {:background :lightgreen}} (str (:+ v))]]
+                                        (:+ v) [(repeat depth [:td])
+                                                [:td {:style {:border-bottom :solid
+                                                              :border-width :thin}}]
+                                                [:td {:style {:border-bottom :solid
+                                                              :border-width :thin
+                                                              :background :lightgreen}} (str (:+ v))]]))]))]]]])]
 
     (if
       (map? (:to-print diff))
-      (reduce color-map [:div] (:to-print diff))
-      (color-seq a-value (:to-print diff)))))
+      (color-map2 a-value (:to-print diff))
+      ;(reduce color-map [:div] (:to-print diff))
+      (color-seq (:to-print diff)))))
 
 (defn- visual-div
   [text]
