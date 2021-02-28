@@ -82,6 +82,7 @@
       (cond (empty? e) (concat acc original)
             (nil? (first e)) (recur (rest e) (rest original) (conj acc (first original)))
             (every? map? [(first original) (:+ (first e))]) (recur (rest e) (rest original) (conj acc (prepare-print (first original) (first e))))
+            (every? coll? [(first original) (:+ (first e))]) (recur (rest e) (rest original) (conj acc (seq-merge (first original) (first e))))
             (:- (first e)) (recur (rest e) (rest original) (conj acc (first e)))
             :else (recur (rest e) original (conj acc (first e)))))))
 
@@ -151,7 +152,8 @@
             [a m]
             (table
               ^{:key (gensym)}
-              [:tr (td "{")
+              [:tr
+               (td "{")
                (mapcat distinct
                        (for [[k v] m]
                          [(into (table-row)
