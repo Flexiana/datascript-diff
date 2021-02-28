@@ -20,15 +20,12 @@
             (let [vector-key (if (coll? k) k [k])
                   a-value (get-in a vector-key)]
               (cond
-                (and (map? a-value) (map? v)) (merge acc (let [{:keys [+ -]} (expansion a-value v)]
-                                                           (-> (get-into acc vector-key :- -)
-                                                               (get-into vector-key :+ +))))
-                (and (coll? a-value) (coll? v) (not= a-value v)) (let [{:keys [+ -]} (seq-diff a-value v)]
-                                                                   (-> (update-in acc [:- vector-key] concat -)
-                                                                       (update-in [:+ vector-key] concat +)))
-                (nil? a-value) (assoc-in acc [:+ vector-key] v)
-                (not= v a-value) (-> (assoc-in acc [:- vector-key] a-value)
-                                     (assoc-in [:+ vector-key] v))
+                (and (map? a-value) (map? v)) (reduce (fn [acc [k v]]
+                                                        (println k v)
+                                                        (assoc acc (concat vector-key k) v)) acc (expansion a-value v))
+                (and (coll? a-value) (coll? v) (not= a-value v)) (assoc acc vector-key (seq-diff a-value v))
+                (nil? a-value) (assoc acc vector-key {:+ v})
+                (not= v a-value) (-> (assoc acc vector-key {:- a-value :+ v}))
                 :else acc))) {} b))
 
 (defn narrowing
@@ -38,10 +35,11 @@
             (let [vector-key (if (coll? k) k [k])
                   b-value (get-in b vector-key)]
               (cond
-                (and (map? b-value) (map? v)) (->> (narrowing {} v b-value)
-                                                   :-
-                                                   (get-into acc vector-key :-))
-                (nil? b-value) (assoc-in acc [:- vector-key] v)
+                (and (map? b-value) (map? v)) (let [d (narrowing {} v b-value)]
+                                                (if (empty? d)
+                                                  acc
+                                                  (update acc vector-key assoc :- d)))
+                (nil? b-value) (update acc vector-key assoc :- v)
                 :else acc)))
     acc
     a))
@@ -66,7 +64,8 @@
   [a b]
   (let [diff (-> (expansion a b)
                  (narrowing a b))]
-    (assoc diff :to-print (prepare-print a diff))))
+    (assoc diff :to-print (merge (prepare-print a diff) (:to-print diff)))
+    diff))
 
 (defn logit
   ([m x]

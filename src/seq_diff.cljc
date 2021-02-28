@@ -69,9 +69,7 @@
                    (and (= a-distance b-distance) (every? coll? [(first av) (first bv)])) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (seq-diff (first av) (first bv))))
                    (= 0 a-distance b-distance) (recur (vec (rest av)) (vec (rest bv)) (vec (rest common)) (conj acc (first common)))
                    (= a-distance b-distance) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (if (= (first av) (first bv)) (first av) {:- (first av) :+ (first bv)}))))))]
-    {:+        (map :+ diff)
-     :-        (map :- diff)
-     :to-print (map #(get % :to-print %) diff)}))
+    diff))
 
 (defn seq-commit
   [a-seq diff]

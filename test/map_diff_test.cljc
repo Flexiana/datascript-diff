@@ -13,34 +13,29 @@
 (deftest step-one
   (is (= {} (expansion {} {})))
   (is (= {} (expansion {:a 1} {:a 1})))
-  (is (= {:+ {[:a] 2}} (expansion {} {:a 2})))
-  (is (= {:+ {[:b] 2 [:c] 3}} (expansion {:a 1} {:b 2 :c 3})))
-  (is (= {:- {[:a] 1} :+ {[:a] 2 [:b] 2 [:c] 3}}
+  (is (= {[:a] {:+ 2}} (expansion {} {:a 2})))
+  (is (= {[:b] {:+ 2}, [:c] {:+ 3}} (expansion {:a 1} {:b 2 :c 3})))
+  (is (= {[:a] {:- 1, :+ 2}, [:b] {:+ 2}, [:c] {:+ 3}}
          (expansion {:a 1} {:a 2 :b 2 :c 3})))
-  (is (= {:+ {[:a] {:a 1}}} (expansion {} {:a {:a 1}})))
-  (is (= {:+ {[:a] {:a 1}}} (expansion {:b 2} {:a {:a 1}})))
-  (is (= {:- {[:a] 2}
-          :+ {[:a] {:a 1}
-              [:b] 3}}
+  (is (= {[:a] {:+ {:a 1}}} (expansion {} {:a {:a 1}})))
+  (is (= {[:a] {:+ {:a 1}}} (expansion {:b 2} {:a {:a 1}})))
+  (is (= {[:a] {:- 2, :+ {:a 1}}, [:b] {:+ 3}}
          (expansion {:a 2} {:a {:a 1}
                             :b 3})))
-  (is (= {:+ {[:b] 3}}
+  (is (= {[:b] {:+ 3}}
          (expansion {:a {:a 1}} {:a {:a 1}
                                  :b 3})))
-  (is (= {:+ {[:a :a] 2
-              [:b]    3}
-          :- {[:a :a] 1}}
+  (is (= {'(:a :a) {:- 1, :+ 2}, [:b] {:+ 3}}
          (expansion {:a {:a 1}} {:a {:a 2}
                                  :b 3})))
-  (is (= {:- {[:b] '(1 2 3 nil nil nil)}
-          :+ {[:b] '(nil nil nil nil nil nil)}}
+  (is (= {[:b] [{:- 1} {:- 2} {:- 3} 4 5 6]}
          (expansion {:b [1 2 3 4 5 6]} {:b [4 5 6]}))))
 
 (deftest step-two
-  (is (= {:- {[:a] "a"}} (narrowing {} {:a "a"} {})))
+  (is (= {[:a] {:- "a"}} (narrowing {} {:a "a"} {})))
   (is (= {} (narrowing {} {:a "c"} {:a "a"})))
-  (is (= {:- {[:b] 2}} (narrowing {} {:a "c" :b 2} {:a "a"})))
-  (is (= {:- {[:a] {:a 1}}} (narrowing {} {:a {:a 1}} {})))
+  (is (= {[:b] {:- 2}} (narrowing {} {:a "c" :b 2} {:a "a"})))
+  (is (= {[:a :a] {:- 1}} (narrowing {} {:a {:a 1}} {})))
   (is (= {} (narrowing {} {:a {:a {:b 5}}} {:a 2}))))
 
 (defn test-full
@@ -75,8 +70,8 @@
                     {:a {:a 2
                          :b 2}
                      :b 3})))
-  (is (= {:- {[:b] '(1 2 3 nil nil nil), [:a] "apple"}
-          :+ {[:b] '(nil nil nil nil nil nil), [:a] [123]}
+  (is (= {:-        {[:b] '(1 2 3 nil nil nil), [:a] "apple"}
+          :+        {[:b] '(nil nil nil nil nil nil), [:a] [123]}
           :to-print {:a {:- "apple", :+ [123]}, :b {:- '(1 2 3 nil nil nil), :+ '(nil nil nil nil nil nil)}}}
          (map-diff {:a "apple"
                     :b [1 2 3 4 5 6]}
@@ -109,20 +104,10 @@
                   :x {:_ 2 :a "b" :b [1 2 3]}
                   :a "b"
                   :b "c"}
-                 {:z [1 "a" "b" 1  3 1 1 2 18 {:a "c"} 19 4 5  6 7 8 9 10 11 12]
+                 {:z [1 "a" "b" 1 3 1 1 2 18 {:a "c"} 19 4 5 6 7 8 9 10 11 12]
                   :x {:a "d" :b [2 1 3]}
                   :a "c"
                   :b "apple"}))
-
-(deftest print-prepare
-  (is (= {:a {:a {:- 1, :+ 2}, :b 2}, :d {:- {:e 5}}, :b {:+ 3}}
-         (prepare-print {:a {:a 1
-                             :b 2}
-                         :d {:e 5}}
-                        {:+ {[:a :a] 2
-                             [:b]    3}
-                         :- {[:a :a] 1
-                             [:d]    {:e 5}}}))))
 
 (defn seq-diff-commit-test
   [a b]
@@ -145,7 +130,7 @@
   (seq-diff-commit-test [:a :b :c] [:c :b :d])
   (seq-diff-commit-test [{:a {:a 2}}] [{:a {:a 3}}])
   (seq-diff-commit-test [{:a {:a 2}}] [{:a {:a 3}}])
-  (seq-diff-commit-test [1  2 {:a {:a 2}} 1 2] [{:a {:a 3}} 1 2])
+  (seq-diff-commit-test [1 2 {:a {:a 2}} 1 2] [{:a {:a 3}} 1 2])
   (seq-diff-commit-test [1 2 {:a {:a 3}} 2 1 2] [1 2 {:a {:a 2}} 1 2])
   (seq-diff-commit-test [{:a {:a {:a 1 :b 2}} :b 2 :d {:e 5}}] [{:a {:a {:a 2} :b 2} :b 3}])
   (seq-diff-commit-test [1 2 [3 1]] [1 2 [3 2]])
@@ -164,3 +149,17 @@
          (:- (map-diff {:a 2} {:a 3}))))
   (is (= (first (:+ (seq-diff [{:a 2} 2] [{:a 3} 2])))
          (:+ (map-diff {:a 2} {:a 3})))))
+
+(seq-diff [1 2 [3 1]] [1 2 [3 2]])
+(map-diff {:c 2 :a [1 2 [3 1]]} {:c 2 :a [1 2 [3 2]]})
+
+(is (= (:to-print (seq-diff [1 2 [3 1]] [1 2 [3 2]]))
+       (get-in (map-diff {:c 2 :a [1 2 [3 1]]} {:c 2 :a [1 2 [3 2]]}) [:to-print [:a]])))
+
+(map-diff {:c 2 :b [1 2 3 4 5 6]} {:d 1 :c 3 :b [4 5 6]})
+
+(map-diff {:a {:b 2} :d 2 :c {:b [1 2 3 4 5 6]}}
+          {:a {:b 3} :d 1 :c {:b [4 5 6] :d [4 5 6]}})
+
+(map-diff {:a 3 :d 2 :c {:b [1 2 3 4 5 6]}} {:d 1 :c {:b [4 5 6]
+                                                      :d [4 5 6]}})
