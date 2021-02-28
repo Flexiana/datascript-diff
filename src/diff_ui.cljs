@@ -45,7 +45,7 @@
                                 (swap! state dissoc :error)
                                 (diffs @state)
                                 (catch :default e
-                                  (swap! state assoc :error (.-message e))
+                                  (swap! state assoc :error e)
                                   [{} {} {}]))
         diff-str (if (empty? diff)
                    "No diff calculated"
@@ -79,9 +79,9 @@
     (loop [e empty-diff
            original a
            acc []]
-      (cond (empty? e) acc
+      (cond (empty? e) (concat acc original)
             (nil? (first e)) (recur (rest e) (rest original) (conj acc (first original)))
-            (map? (:- (first e))) (recur (rest e) (rest original) (conj acc (prepare-print (first original) (first e))))
+            (every? map? [(first original) (:+ (first e))]) (recur (rest e) (rest original) (conj acc (prepare-print (first original) (first e))))
             (:- (first e)) (recur (rest e) (rest original) (conj acc (first e)))
             :else (recur (rest e) original (conj acc (first e)))))))
 
@@ -136,8 +136,8 @@
                (into (table-row)
                      (for [c s]
                        (cond
-                         (and (coll? c) (nil? (:- c)) (nil? (:+ c))) (td (colorize-core (a-value (.indexOf (vec s) c)) c))
-                         (and (coll? c) (map? (:- c)) (map? (:+ c))) (td (colorize-core (a-value (.indexOf (vec s) c)) c))
+                         (and (coll? c) (nil? (:- c)) (nil? (:+ c))) (td (colorize-core (a-value (dec (.indexOf (vec s) c))) c))
+                         (and (coll? c) (map? (:- c)) (map? (:+ c))) (td (colorize-core (a-value (dec (.indexOf (vec s) c))) c))
                          (:- c) (td :lightcoral (str (:- c)))
                          (not (:+ c)) (td :lightgrey (str c))
                          :else (td))))
