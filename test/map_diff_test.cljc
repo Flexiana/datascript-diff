@@ -31,12 +31,22 @@
   (is (= {[:b] [{:- 1} {:- 2} {:- 3} 4 5 6]}
          (expansion {:b [1 2 3 4 5 6]} {:b [4 5 6]}))))
 
+(defn step-2
+  [a b]
+  (-> (expansion a b)
+      (narrowing a b)))
+
+(step-2 {:a "a"} {})
+
 (deftest step-two
-  (is (= {[:a] {:- "a"}} (narrowing {} {:a "a"} {})))
-  (is (= {} (narrowing {} {:a "c"} {:a "a"})))
+  (is (= {[:a] {:- "a"}} (step-2 {:a "a"} {})))
+  (is (= {[:a] {:- "c", :+ "a"}} (step-2 {:a "c"} {:a "a"})))
   (is (= {[:b] {:- 2}} (narrowing {} {:a "c" :b 2} {:a "a"})))
-  (is (= {[:a :a] {:- 1}} (narrowing {} {:a {:a 1}} {})))
-  (is (= {} (narrowing {} {:a {:a {:b 5}}} {:a 2}))))
+  (is (= {[:a] {:- {:a 1}}} (narrowing {} {:a {:a 1}} {})))
+  (is (= {'(:a :a) {:- 2, :+ 1}, '(:a :b) {:- 2}} (narrowing {'(:a :a) {:- 2, :+ 1}} {:a {:a 2 :b 2}} {:a {:a 1}})))
+  (is (= {[:a] {:- {:a {:b 5}}, :+ 2}} (step-2 {:a {:a {:b 5}}} {:a 2}))))
+
+(expansion {:a {:a 2 :b 2}} {:a {:a 1}})
 
 (defn test-full
   [a b]
@@ -45,25 +55,19 @@
 (deftest full-diff
   (is (= {} (test-full {} {})))
   (is (= {} (test-full {:a 1} {:a 1})))
-  (is (= {:+ {[:a] 2}} (test-full {} {:a 2})))
-  (is (= {:+ {[:b] 2, [:c] 3}, :- {[:a] 1}} (test-full {:a 1} {:b 2 :c 3})))
-  (is (= {:- {[:a] 1} :+ {[:a] 2 [:b] 2 [:c] 3}}
+  (is (= {[:a] {:+ 2}} (test-full {} {:a 2})))
+  (is (= {[:b] {:+ 2}, [:c] {:+ 3}, [:a] {:- 1}} (test-full {:a 1} {:b 2 :c 3})))
+  (is (= {[:a] {:- 1, :+ 2}, [:b] {:+ 2}, [:c] {:+ 3}}
          (test-full {:a 1} {:a 2 :b 2 :c 3})))
-  (is (= {:+ {[:a] {:a 1}}} (test-full {} {:a {:a 1}})))
-  (is (= {:+ {[:a] {:a 1}}, :- {[:b] 2}} (test-full {:b 2} {:a {:a 1}})))
-  (is (= {:- {[:a] 2}
-          :+ {[:a] {:a 1}
-              [:b] 3}}
+  (is (= {[:a] {:+ {:a 1}}} (test-full {} {:a {:a 1}})))
+  (is (= {[:a] {:+ {:a 1}}, [:b] {:- 2}} (test-full {:b 2} {:a {:a 1}})))
+  (is (= {[:a] {:- 2, :+ {:a 1}}, [:b] {:+ 3}}
          (test-full {:a 2} {:a {:a 1}
                             :b 3})))
-  (is (= {:+ {[:b] 3}
-          :- {[:c] 3}}
+  (is (= {'(:a :a) {:- 1, :+ 2}, [:b] {:+ 3}, [:d] {:- {:e 5}}}
          (test-full {:a {:a 1} :c 3} {:a {:a 1}
                                       :b 3})))
-  (is (= {:+ {[:a :a] 2
-              [:b]    3}
-          :- {[:a :a] 1
-              [:d]    {:e 5}}}
+  (is (= {[:b] [{:- 1} {:- 2} {:- 3} 4 5 6], [:a] {:- "apple", :+ [123]}}
          (test-full {:a {:a 1
                          :b 2}
                      :d {:e 5}}

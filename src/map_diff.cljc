@@ -31,15 +31,16 @@
 (defn narrowing
   "Collects what has been deleted. Run 'fn expansion' first"
   [acc a b]
-  (reduce (fn [acc [k v]]
+  (reduce (fn core
+            [acc [k a-value]]
             (let [vector-key (if (coll? k) k [k])
                   b-value (get-in b vector-key)]
               (cond
-                (and (map? b-value) (map? v)) (let [d (narrowing {} v b-value)]
-                                                (if (empty? d)
-                                                  acc
-                                                  (update acc vector-key assoc :- d)))
-                (nil? b-value) (update acc vector-key assoc :- v)
+                (and (map? b-value) (map? a-value)) (let [d (narrowing {} a-value b-value)]
+                                                      (if (empty? d)
+                                                        acc
+                                                        (reduce (fn [acc [k v]] (assoc acc (concat vector-key k) v)) acc d)))
+                (nil? b-value) (assoc-in acc [vector-key] {:- a-value})
                 :else acc)))
     acc
     a))
