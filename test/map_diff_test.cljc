@@ -7,7 +7,6 @@
     [map-diff :refer [map-commit
                       map-diff
                       narrowing
-                      prepare-print
                       expansion]]))
 
 (deftest step-one
@@ -48,35 +47,24 @@
 
 (expansion {:a {:a 2 :b 2}} {:a {:a 1}})
 
-(defn test-full
-  [a b]
-  (dissoc (map-diff a b) :to-print))
-
 (deftest full-diff
-  (is (= {} (test-full {} {})))
-  (is (= {} (test-full {:a 1} {:a 1})))
-  (is (= {[:a] {:+ 2}} (test-full {} {:a 2})))
-  (is (= {[:b] {:+ 2}, [:c] {:+ 3}, [:a] {:- 1}} (test-full {:a 1} {:b 2 :c 3})))
+  (is (= {} (map-diff {} {})))
+  (is (= {} (map-diff {:a 1} {:a 1})))
+  (is (= {[:a] {:+ 2}} (map-diff {} {:a 2})))
+  (is (= {[:b] {:+ 2}, [:c] {:+ 3}, [:a] {:- 1}} (map-diff {:a 1} {:b 2 :c 3})))
   (is (= {[:a] {:- 1, :+ 2}, [:b] {:+ 2}, [:c] {:+ 3}}
-         (test-full {:a 1} {:a 2 :b 2 :c 3})))
-  (is (= {[:a] {:+ {:a 1}}} (test-full {} {:a {:a 1}})))
-  (is (= {[:a] {:+ {:a 1}}, [:b] {:- 2}} (test-full {:b 2} {:a {:a 1}})))
+         (map-diff {:a 1} {:a 2 :b 2 :c 3})))
+  (is (= {[:a] {:+ {:a 1}}} (map-diff {} {:a {:a 1}})))
+  (is (= {[:a] {:+ {:a 1}}, [:b] {:- 2}} (map-diff {:b 2} {:a {:a 1}})))
   (is (= {[:a] {:- 2, :+ {:a 1}}, [:b] {:+ 3}}
-         (test-full {:a 2} {:a {:a 1}
-                            :b 3})))
+         (map-diff {:a 2} {:a {:a 1}
+                           :b 3})))
+  (is (= {'(:a :a) {:- 1, :+ 2}, [:b] {:+ 3}, [:c] {:- 3}}
+         (map-diff {:a {:a 1} :c 3} {:a {:a 2} :b 3})))
   (is (= {'(:a :a) {:- 1, :+ 2}, [:b] {:+ 3}, [:d] {:- {:e 5}}}
-         (test-full {:a {:a 1} :c 3} {:a {:a 1}
-                                      :b 3})))
+         (map-diff {:a {:a 1 :b 2} :d {:e 5}}
+                   {:a {:a 2 :b 2} :b 3})))
   (is (= {[:b] [{:- 1} {:- 2} {:- 3} 4 5 6], [:a] {:- "apple", :+ [123]}}
-         (test-full {:a {:a 1
-                         :b 2}
-                     :d {:e 5}}
-                    {:a {:a 2
-                         :b 2}
-                     :b 3})))
-  (is (= {:-        {[:b] '(1 2 3 nil nil nil), [:a] "apple"}
-          :+        {[:b] '(nil nil nil nil nil nil), [:a] [123]}
-          :to-print {:a {:- "apple", :+ [123]}, :b {:- '(1 2 3 nil nil nil), :+ '(nil nil nil nil nil nil)}}}
          (map-diff {:a "apple"
                     :b [1 2 3 4 5 6]}
                    {:b [4 5 6]
