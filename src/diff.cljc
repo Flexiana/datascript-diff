@@ -30,8 +30,6 @@
         eq-paths        (intersection idx-want idx-have)
         diff-want-paths (difference idx-want idx-have)
         diff-have-paths (difference idx-have idx-want)]
-    (prn idx-have idx-want)
-    (prn [diff-want-paths diff-have-paths])
     (concat (keep (fn [df]
                     {:path     df
                      :expected (get-in want df)
