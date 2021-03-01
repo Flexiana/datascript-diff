@@ -1,73 +1,49 @@
-(ns diff)
 (ns diff
   (:require [datascript.core :as ds]
             [datascript.db :refer [db-from-reader]]
-            [clojure.test :refer [deftest is]]
-            [matcher-combinators.test :refer [match?]]
-            [clojure.edn :as edn]))
+            [clojure.edn :as edn]
+            [clojure.set :refer [difference
+                                 intersection]]))
 
 (defn all-paths-aux [table path]
-  (letfn [(hash-f [[key val]] (all-paths-aux val (conj path key)))
-          (vect-f [idx val] (all-paths-aux val (conj path idx)))]
+  (letfn [(hash-f [[key val]]
+            (all-paths-aux val
+                           (conj path key)))
+          (vect-f [idx val]
+            (all-paths-aux val
+                           (conj path idx)))]
     (cond
-      (and (map? table)    (not (empty? table))) (into [] (apply concat (map hash-f table)))
-      (and (vector? table) (not (empty? table))) (into [] (apply concat (map-indexed vect-f table)))
-      :else                                      [path])))
+      (and (map? table)
+           (seq table)) (into [] (apply concat
+                                         (map hash-f table)))
+      (and (vector? table)
+           (seq table)) (into [] (apply concat
+                                        (map-indexed vect-f table)))
+      :else             [path])))
 
 (defn all-paths [table]
   (all-paths-aux table []))
 
-
-
-(deftest map-differences-test
-  (is (match? {::have {}
-               ::want {}
-               ::have->want []})
-      (map-differences {} {}))
-  (is (match? {::have {:a 1}
-               ::want {:a 2}
-               ::have->want [{::path [:a]
-                              ::have 1
-                              ::want 2}]})
-      (map-differences {:a 1} {:a 2}))
-
-  (is (match? {::have {:a 1}
-               ::want {:a [1]}
-               ::have->want [{::path [:a]
-                              ::have 1
-                              ::want [1]}
-                             {::path [:a 0]
-                              ::have nil
-                              ::want 1}]}
-              (map-differences {:a 1} {:a [1]})))
-  (is (match? {::have {:a 1}
-               ::want {:b 2}
-               ::have->want [{::path [:a]
-                              ::have 1
-                              ::want nil}]}
-              (map-differences {:a 1} {:b 2})))
-  (is (match? {::have {:a 1}
-               ::want {:b 2}
-               ::have->want [{::path [:a]
-                              ::have 1
-                              ::want nil}]}))
-  (is (match? {::have {:a 1}
-               ::want {:b 2}
-               ::have->want [{::path [:a]
-                              ::have {:b 2}
-                              ::want 1}
-                             {::path [:a :b]
-                              ::have 2
-                              ::want nil}]}
-              (map-differences {:a {:b 2}} {:a 1}))))
-
-(comment
-  (require '[clojure.java.io :as io])
-  (let [{:keys [schema] :as m} (db-from-reader (edn/read-string (slurp (io/resource "db.edn"))))]
-    #_(ds/q '[:find (pull ?e [{:block/children
-                               [{:block/children [*]}]}])
-              :where [?e :block/uid "cpgzSMTye"]]
-            m)
-    schema
-    #_(ds/conn-from-db m)))
-
+(defn map-diff [have want]
+  (let [idx-have        (set (all-paths have))
+        idx-want        (set (all-paths want))
+        eq-paths        (intersection idx-want idx-have)
+        diff-want-paths (difference idx-want idx-have)
+        diff-have-paths (difference idx-have idx-want)]
+    (concat (keep (fn [df]
+                    {:path     df
+                     :expected (get-in want df)
+                     :mismatch :-}) diff-want-paths)
+            (when-not (empty? (first diff-have-paths))
+              (keep (fn [df]
+                      {:path     df
+                       :actual   (get-in have df)
+                       :mismatch :+}) diff-have-paths))
+            (keep (fn [eq]
+                    (let [expected (get-in have eq)
+                          actual   (get-in want eq)]
+                      (when-not (= expected actual)
+                        {:path     eq
+                         :expected expected
+                         :actual   actual
+                         :mismatch :diff}))) eq-paths))))
