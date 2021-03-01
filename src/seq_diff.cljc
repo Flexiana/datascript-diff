@@ -44,24 +44,22 @@
 
 (defn seq-diff
   [a-seq b-seq]
-  (->>
-    (loop [av (vec a-seq)
-           bv (vec b-seq)
-           common (common-ordered-part a-seq b-seq)
-           acc []]
-      (let [a-distance (when common (.indexOf av (first common)))
-            b-distance (when common (.indexOf bv (first common)))]
-        (cond
-          (every? empty? [av bv]) acc
-          (empty? av) (concat acc (map (fn [x] {:+ x}) bv))
-          (empty? bv) (concat acc (map (fn [x] {:- x}) av))
-          (< a-distance b-distance) (recur av (vec (rest bv)) common (conj acc {:+ (first bv)}))
-          (> a-distance b-distance) (recur (vec (rest av)) bv common (conj acc {:- (first av)}))
-          (and (= a-distance b-distance) (every? map? [(first av) (first bv)])) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (map-diff (first av) (first bv))))
-          (and (= a-distance b-distance) (every? coll? [(first av) (first bv)])) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (seq-diff (first av) (first bv))))
-          (= 0 a-distance b-distance) (recur (vec (rest av)) (vec (rest bv)) (vec (rest common)) (conj acc (first common)))
-          (= a-distance b-distance) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (if (= (first av) (first bv)) (first av) {:- (first av) :+ (first bv)}))))))
-    (map #(when (map? %) %))))
+  (loop [av (vec a-seq)
+         bv (vec b-seq)
+         common (common-ordered-part a-seq b-seq)
+         acc []]
+    (let [a-distance (when common (.indexOf av (first common)))
+          b-distance (when common (.indexOf bv (first common)))]
+      (cond
+        (every? empty? [av bv]) acc
+        (empty? av) (concat acc (map (fn [x] {:+ x}) bv))
+        (empty? bv) (concat acc (map (fn [x] {:- x}) av))
+        (< a-distance b-distance) (recur av (vec (rest bv)) common (conj acc {:+ (first bv)}))
+        (> a-distance b-distance) (recur (vec (rest av)) bv common (conj acc {:- (first av)}))
+        (and (= a-distance b-distance) (every? map? [(first av) (first bv)])) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (map-diff (first av) (first bv))))
+        (and (= a-distance b-distance) (every? coll? [(first av) (first bv)])) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (seq-diff (first av) (first bv))))
+        (= 0 a-distance b-distance) (recur (vec (rest av)) (vec (rest bv)) (vec (rest common)) (conj acc (first common)))
+        (= a-distance b-distance) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (if (= (first av) (first bv)) (first av) {:- (first av) :+ (first bv)})))))))
 
 (defn extend-seq
   [s d]
