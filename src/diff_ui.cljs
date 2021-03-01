@@ -149,6 +149,7 @@
             [s]
             (let [extended (extend-seq a-value diff)
                   merged (map (fn [a d] [a d]) extended diff)]
+              (println "merged " merged)
               (table
                 ^{:key (gensym)}
                 [:tr (td "(")
@@ -157,14 +158,10 @@
                          (let [pv (:+ change)
                                mv (:- change)]
                            (cond
-                             (and pv mv) (td :lightcoral (str origin)))))
-                       #_(for [c s]
-                           (cond
-                             (and (coll? c) (nil? (:- c)) (nil? (:+ c))) (td (colorize-core (a-value (dec (.indexOf (vec s) c))) c))
-                             (and (coll? c) (map? (:- c)) (map? (:+ c))) (td (colorize-core (a-value (dec (.indexOf (vec s) c))) c))
-                             (:- c) (td :lightcoral (str (:- c)))
-                             (not (:+ c)) (td :lightgrey (str c))
-                             :else (td))))
+                             (nil? origin) (td)
+                             mv (td :lightcoral (str mv))
+                             (every? coll? [origin change]) (td (colorize-core origin change))
+                             origin (td :lightgrey (str origin))))))
                  (into (table-row)
                        (for [c s]
                          (cond
@@ -190,12 +187,15 @@
                                                 (next ks) [(td-border :white (str k)) (colorize-core origin {(rest ks) v})]
                                                 (and pv mv) [(td :white (str k)) (td :lightcoral (str mv))]
                                                 mv [(td-border :lightcoral (str k)) (td-border :lightcoral (str mv))]
-                                                (coll? v) [(td-border :white (str k)) (color-seq v)]
+                                                pv [(td) (td)]
+                                                (map? v) [(td-border :white (str k)) (colorize-core origin {(rest ks) v})]
+                                                (coll? v) [(td-border :white (str k)) (colorize-core origin v)]
                                                 :else [(td (str k)) (td (str v))]))
                                         (into (table-row)
                                               (cond
                                                 (and mv pv) [(td-border) (td-border :lightgreen (str pv))]
                                                 (and (not (coll? v)) pv) [(td (str k)) (td)]
+                                                pv [(td-border :lightgreen (str k)) (td-border :lightgreen (str pv))]
                                                 (coll? v) [(td) (td)]
                                                 :else [(td) (td)]))])))))
                  (td "}")])))]
