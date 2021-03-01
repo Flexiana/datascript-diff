@@ -1,8 +1,8 @@
 (ns diff-ui
-  (:require [map-diff :refer [prepare-print
-                              map-diff
+  (:require [map-diff :refer [map-diff
                               map-commit]]
-            [seq-diff :refer [seq-diff
+            [seq-diff :refer [extend-seq
+                              seq-diff
                               seq-commit]]
             [reagent.core :as r]
             [clojure.string :as str]
@@ -81,7 +81,7 @@
            acc []]
       (cond (empty? e) (concat acc original)
             (nil? (first e)) (recur (rest e) (rest original) (conj acc (first original)))
-            (every? map? [(first original) (:+ (first e))]) (recur (rest e) (rest original) (conj acc (prepare-print (first original) (first e))))
+            (every? map? [(first original) (:+ (first e))]) (recur (rest e) (rest original) (conj acc (first e)))
             (every? coll? [(first original) (:+ (first e))]) (recur (rest e) (rest original) (conj acc (seq-merge (first original) (first e))))
             (:- (first e)) (recur (rest e) (rest original) (conj acc (first e)))
             :else (recur (rest e) original (conj acc (first e)))))))
@@ -127,60 +127,82 @@
    ^{:key (gensym)}
    [:td {:style {:background color}} content]))
 
+(defn merge-map
+  [a-map diff]
+  (->> (reduce (fn [acc [k v]]
+                 (if (some #(= k (first %)) (keys acc))
+                   acc
+                   (assoc acc (vector k) v))) diff a-map)
+       (group-by ffirst)
+       (into {})))
+
+(merge-map {:a 2 :b 2} {[:c :d] 2 [:c :a] 4})
+
+(defn logit
+  [param1 param2]
+  (println param1 param2)
+  param2)
+
 (defn- colorize-core
-  [a-value diff-str]
+  [a-value diff]
   (letfn [(color-seq
             [s]
-            (table
-              ^{:key (gensym)}
-              [:tr (td "(")
-               (into (table-row)
-                     (for [c s]
-                       (cond
-                         (and (coll? c) (nil? (:- c)) (nil? (:+ c))) (td (colorize-core (a-value (dec (.indexOf (vec s) c))) c))
-                         (and (coll? c) (map? (:- c)) (map? (:+ c))) (td (colorize-core (a-value (dec (.indexOf (vec s) c))) c))
-                         (:- c) (td :lightcoral (str (:- c)))
-                         (not (:+ c)) (td :lightgrey (str c))
-                         :else (td))))
-               (into (table-row)
-                     (for [c s]
-                       (cond
-                         (:+ c) (td :lightgreen (str (:+ c)))
-                         :else (td))))
-               (td ")")]))
+            (let [extended (extend-seq a-value diff)
+                  merged (map (fn [a d] [a d]) extended diff)]
+              (table
+                ^{:key (gensym)}
+                [:tr (td "(")
+                 (into (table-row)
+                       (for [[origin change] merged]
+                         (let [pv (:+ change)
+                               mv (:- change)]
+                           (cond
+                             (and pv mv) (td :lightcoral (str origin)))))
+                       #_(for [c s]
+                           (cond
+                             (and (coll? c) (nil? (:- c)) (nil? (:+ c))) (td (colorize-core (a-value (dec (.indexOf (vec s) c))) c))
+                             (and (coll? c) (map? (:- c)) (map? (:+ c))) (td (colorize-core (a-value (dec (.indexOf (vec s) c))) c))
+                             (:- c) (td :lightcoral (str (:- c)))
+                             (not (:+ c)) (td :lightgrey (str c))
+                             :else (td))))
+                 (into (table-row)
+                       (for [c s]
+                         (cond
+                           (:+ c) (td :lightgreen (str (:+ c)))
+                           :else (td))))
+                 (td ")")])))
           (color-map2
-            [a m]
-            (table
-              ^{:key (gensym)}
-              [:tr
-               (td "{")
-               (mapcat distinct
-                       (for [[k v] m]
-                         [(into (table-row)
-                                (cond
-                                  (and (map? v) (every? coll? [(:- v) (:+ v)])) [(td-border :white (str k))
-                                                                                 (td :white (colorize-core (get a k) (seq-merge (get a-value k) v)))]
-                                  (and (:- v) (:+ v)) [(td :white (str k))
-                                                       (td :lightcoral (str (:- v)))]
-                                  (:- v) [(td-border :lightcoral (str k))
-                                          (td-border :lightcoral (str (:- v)))]
-                                  (and (map? v) (every? nil? [(:- v) (:+ v)])) [(td-border :while (str k))
-                                                                                (td :white (colorize-core (get a k) v))]
-                                  (every? nil? [(:- v) (:+ v)]) [(td-border :lightgrey (str k))
-                                                                 (td-border :lightgrey (str v))]))
-                          (into (table-row)
-                                (cond
-                                  (and (map? v) (every? coll? [(:- v) (:+ v)])) [(td)]
-                                  (and (nil? (:- v)) (:+ v)) [(td :lightgreen (str k))
-                                                              (td :lightgreen (str (:+ v)))]
-                                  (:+ v) [(td-border)
-                                          (td-border :lightgreen (str (:+ v)))]))]))
-
-               (td "}")]))]
+            [a-map diff]
+            (let [preprocessed (merge-map a-map diff)]
+              (table
+                ^{:key (gensym)}
+                [:tr
+                 (td "{")
+                 (mapcat distinct
+                         (for [[k w] preprocessed]
+                           (mapcat distinct
+                                   (for [[ks v] w]
+                                     (let [pv (:+ v)
+                                           mv (:- v)
+                                           origin (get a-map k)]
+                                       [(into (table-row)
+                                              (cond
+                                                (next ks) [(td-border :white (str k)) (colorize-core origin {(rest ks) v})]
+                                                (and pv mv) [(td :white (str k)) (td :lightcoral (str mv))]
+                                                mv [(td-border :lightcoral (str k)) (td-border :lightcoral (str mv))]
+                                                (coll? v) [(td-border :white (str k)) (color-seq v)]
+                                                :else [(td (str k)) (td (str v))]))
+                                        (into (table-row)
+                                              (cond
+                                                (and mv pv) [(td-border) (td-border :lightgreen (str pv))]
+                                                (and (not (coll? v)) pv) [(td (str k)) (td)]
+                                                (coll? v) [(td) (td)]
+                                                :else [(td) (td)]))])))))
+                 (td "}")])))]
     (if
-      (map? diff-str)
-      (color-map2 a-value diff-str)
-      (color-seq diff-str))))
+      (map? diff)
+      (color-map2 a-value diff)
+      (color-seq diff))))
 
 (defn- visual-div
   [text]
@@ -195,9 +217,8 @@
 
 (defn- colorize
   [a-value diff]
-  (let [diff-str (:to-print diff)
-        c (colorize-core a-value diff-str)]
-    (if (not-empty diff-str)
+  (let [c (colorize-core a-value diff)]
+    (if (not-empty diff)
       (into (visual-div "")
             (rest c))
       (visual-div "No diff calculated"))))
@@ -243,4 +264,5 @@
                [:td (text-area (get @state :diff-str "No diff calculated"))]
                [:td {:style {:vertical-align :top}} colorized]
                [:td (text-area (get @state :commit "No diff calculated"))]]]]
-     [:p (str (get @state :error " "))]]))
+     [:p (str (get @state :error " "))]
+     [:p (str (get @state :diff " "))]]))
