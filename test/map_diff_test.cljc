@@ -104,7 +104,15 @@
   (map-full-test {:a {:a {:a 1 :b 2}} :b 2 :d {:e 5}} {:a {:a {:a 2} :b 2} :b 3})
   (map-full-test {:a "apple" :b [1 2 3 4 5 6]} {:b [4 5 6]})
   (map-full-test {:x [{:a 3} 2]} {:x [{:a 3} 2]})
-  (map-full-test {:a [:c :b :d]} {:a [:a :b :c]}))
+  (map-full-test {:a [:c :b :d]} {:a [:a :b :c]})
+  (map-full-test {:z [1 1 2 3 5 7 10 18 {:a "b"} 19 13 15]
+                  :x {:_ 2 :a "b" :b [1 2 3]}
+                  :a "b"
+                  :b "c"}
+                 {:z [1 "a" "b" 1  3 1 1 2 18 {:a "c"} 19 4 5  6 7 8 9 10 11 12]
+                  :x {:a "d" :b [2 1 3]}
+                  :a "c"
+                  :b "apple"}))
 
 (deftest print-prepare
   (is (= {:a {:a {:- 1, :+ 2}, :b 2}, :d {:- {:e 5}}, :b {:+ 3}}
@@ -139,7 +147,10 @@
   (seq-diff-commit-test [{:a {:a 2}}] [{:a {:a 3}}])
   (seq-diff-commit-test [1  2 {:a {:a 2}} 1 2] [{:a {:a 3}} 1 2])
   (seq-diff-commit-test [1 2 {:a {:a 3}} 2 1 2] [1 2 {:a {:a 2}} 1 2])
-  (seq-diff-commit-test [{:a {:a {:a 1 :b 2}} :b 2 :d {:e 5}}] [{:a {:a {:a 2} :b 2} :b 3}]))
+  (seq-diff-commit-test [{:a {:a {:a 1 :b 2}} :b 2 :d {:e 5}}] [{:a {:a {:a 2} :b 2} :b 3}])
+  (seq-diff-commit-test [1 2 [3 1]] [1 2 [3 2]])
+  (seq-diff-commit-test [1 1 2 3 5 7 10 18 {:a "b"} 19 13 15]
+                        [1 "a" "b" 1 3 1 1 2 18 {:a "c"} 19 4 5 6 7 8 9 10 11 12]))
 
 (deftest map-in-seq
   (is (= (first (:to-print (seq-diff [{:a 2} 2] [{:a 3} 2])))
