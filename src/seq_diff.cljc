@@ -71,31 +71,6 @@
                    (= a-distance b-distance) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (if (= (first av) (first bv)) (first av) {:- (first av) :+ (first bv)}))))))]
     diff))
 
-(defn seq-commit2
-  [a-seq diff]
-  (loop [as a-seq
-         p (:+ diff)
-         m (:- diff)
-         acc []]
-    (let [a (first as)
-          pv (first p)
-          mv (first m)]
-      (cond
-        ;; add all remain: as empty
-        (empty? as) (concat acc (remove nil? p))
-        ;; if all map? replace it with map-commit
-        (every? map? [a pv mv]) (recur (rest as) (rest p) (rest m) (conj acc (map-commit a {:+ pv :- mv})))
-        ;; if all seq? replace it with seq-commit
-        (every? coll? [a pv mv]) (recur (rest as) (rest p) (rest m) (conj acc (seq-commit2 a {:+ pv :- mv})))
-        ;; replace: a eq mv and pv !nil
-        (and (= a mv) pv) (recur (rest as) (rest p) (rest m) (conj acc pv))
-        ;; delete: a eq mv and pv nil
-        (and (= a mv) (nil? pv)) (recur (rest as) (rest p) (rest m) acc)
-        ;; insert: mv nil and pv !nil
-        (and (nil? mv) pv) (recur as (rest p) (rest m) (conj acc pv))
-        ;; keep: mv nil and pv nil
-        (and (nil? mv) (nil? pv)) (recur (rest as) (rest p) (rest m) (conj acc a))))))
-
 (defn extend-seq
   [s d]
   (loop [s s
@@ -110,8 +85,6 @@
         (and dp dm) (recur (rest s) (rest d) (conj acc fs))
         dp (recur s (rest d) (conj acc nil))
         :else (recur (rest s) (rest d) (conj acc fs))))))
-
-(extend-seq [1 2 3 {:a "c"}] [{:+ 2} 1 2 {:- 3 :+ 2} {:a "b"} {:+ 1}])
 
 (defn seq-commit
   [a-seq diff]

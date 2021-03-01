@@ -21,7 +21,6 @@
                   a-value (get-in a vector-key)]
               (cond
                 (and (map? a-value) (map? v)) (reduce (fn [acc [k v]]
-                                                        (println k v)
                                                         (assoc acc (concat vector-key k) v)) acc (expansion a-value v))
                 (and (coll? a-value) (coll? v) (not= a-value v)) (assoc acc vector-key (seq-diff a-value v))
                 (nil? a-value) (assoc acc vector-key {:+ v})
@@ -88,15 +87,13 @@
     (if (empty? ks)
       a-map
       (reduce (fn [a k]
-                (println "\nseq commit: " "\na-map:" a-map "\ndiff" diff "\npv" pv "\nmv" mv "\nks" ks "\nk" k "\na" a)
                 (let [av (get-in a-map k)
                       p (get pv k)
                       m (get mv k)]
-                  (println "\nav" av "\np" p "\nm" m)
-                  (logit "new-map: " (cond
-                                       (nil? av) a
-                                       (and (s-or-v? av) (every? s-or-v? [p m])) (assoc-in a k (logit "sq" (seq-commit av (logit "sq diff: " {:+ p :- m}))))
-                                       :else (assoc-in a k av)))))
+                  (cond
+                    (nil? av) a
+                    (and (s-or-v? av) (every? s-or-v? [p m])) (assoc-in a k (logit "sq" (seq-commit av (logit "sq diff: " {:+ p :- m}))))
+                    :else (assoc-in a k av))))
         {} ks))))
 ;{:+ {[:a3] 1},
 ; :- {[:z] [1 1 2 3 5 7 10 18 {:a b} 19 13],
@@ -119,25 +116,21 @@
   (reduce (fn [a [ks m]]
             (let [current (first ks)
                   p (get-in diff [:+ ks])]
-              (println "\ndiff" diff "\nks" ks "\na" a "\nm" m "\np" p)
-              (logit
-                "reduct2: "
-                (cond
-                  (empty? ks) a
-                  (every? nil? [m p]) a
-                  (= 1 (count ks)) (if (and m (nil? p))
-                                     (dissoc a current)
-                                     a)
-                  :else (assoc a current (reduct2 (get a current) {:- {(rest ks) m} :+ {(rest ks) p}}))))))
+              (cond
+                (empty? ks) a
+                (every? nil? [m p]) a
+                (= 1 (count ks)) (if (and m (nil? p))
+                                   (dissoc a current)
+                                   a)
+                :else (assoc a current (reduct2 (get a current) {:- {(rest ks) m} :+ {(rest ks) p}})))))
     a-map -))
 
 (defn map-commit
   "Applies a diff to a map"
   [a-map {:keys [+ -] :as diff}]
-  (let [;sup (reduce reduct a-map -)
-        sup (logit "sup:" (reduct2 a-map diff))]
-    (-> (logit "ext: " (reduce (fn [a [ks v]]
-                                 (if (or (seq? v) (vector? v))
-                                   a
-                                   (assoc-in a ks v))) sup +))
+  (let [sup (reduct2 a-map diff)]
+    (-> (reduce (fn [a [ks v]]
+                  (if (or (seq? v) (vector? v))
+                    a
+                    (assoc-in a ks v))) sup +)
         (commit-sequences diff))))
