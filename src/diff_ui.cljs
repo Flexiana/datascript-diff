@@ -45,16 +45,16 @@
                                 (swap! state dissoc :error)
                                 (diffs @state)
                                 (catch :default e
-                                  (swap! state assoc :error e)
+                                  (swap! state assoc :error (.-message e))
                                   [{} {} {}]))
         diff-str (if (empty? diff)
                    "No diff calculated"
                    (-> diff
                        str
-                       (str/replace #",\s*" "\n")
-                       (str/replace #"[\{|}]" "\n")
+                       (str/replace #"]" "]\n")
+                       (str/replace #"}" "}\n")
+                       (str/replace #"\)" ")\n")
                        (str/replace #"\n+" "\n")
-                       rest
                        str/join))
         commit (if (empty? commit)
                  "No diff calculated"
@@ -70,21 +70,6 @@
   [:div (str k " ") [:a {:style {:background color
                                  :width      :max-content}} v]])
 
-(defn seq-merge
-  [a v]
-  (let [empty-diff (map (fn [p m]
-                          (cond-> nil
-                            p (assoc :+ p)
-                            m (assoc :- m))) (:+ v) (:- v))]
-    (loop [e empty-diff
-           original a
-           acc []]
-      (cond (empty? e) (concat acc original)
-            (nil? (first e)) (recur (rest e) (rest original) (conj acc (first original)))
-            (every? map? [(first original) (:+ (first e))]) (recur (rest e) (rest original) (conj acc (first e)))
-            (every? coll? [(first original) (:+ (first e))]) (recur (rest e) (rest original) (conj acc (seq-merge (first original) (first e))))
-            (:- (first e)) (recur (rest e) (rest original) (conj acc (first e)))
-            :else (recur (rest e) original (conj acc (first e)))))))
 
 (defn table-row
   []
@@ -129,19 +114,8 @@
 
 (defn merge-map
   [a-map diff]
-  (->> (reduce (fn [acc [k v]]
-                 (if (some #(= k (first %)) (keys acc))
-                   acc
-                   (assoc acc (vector k) v))) diff a-map)
-       (group-by ffirst)
-       (into {})))
-
-(merge-map {:a 2 :b 2} {[:c :d] 2 [:c :a] 4})
-
-(defn logit
-  [param1 param2]
-  (println param1 param2)
-  param2)
+  (reduce (fn [acc [ks v]]
+            (assoc-in acc (if (coll? ks) ks (vector ks)) v)) a-map diff))
 
 (defn- colorize-core
   [a-value diff]
@@ -155,13 +129,11 @@
                 [:tr (td "(")
                  (into (table-row)
                        (for [[origin change] merged]
-                         (let [pv (:+ change)
-                               mv (:- change)]
-                           (cond
-                             (nil? origin) (td)
-                             mv (td :lightcoral (str mv))
-                             (every? coll? [origin change]) (td (colorize-core origin change))
-                             origin (td :lightgrey (str origin))))))
+                         (cond
+                           (nil? origin) (td)
+                           (:- change) (td :lightcoral (str (:- change)))
+                           (every? coll? [origin change]) (td (colorize-core origin change))
+                           origin (td :lightgrey (str origin)))))
                  (into (table-row)
                        (for [c s]
                          (cond
@@ -176,28 +148,22 @@
                 [:tr
                  (td "{")
                  (mapcat distinct
-                         (for [[k w] preprocessed]
-                           (mapcat distinct
-                                   (for [[ks v] w]
-                                     (let [pv (:+ v)
-                                           mv (:- v)
-                                           origin (get a-map k)]
-                                       [(into (table-row)
-                                              (cond
-                                                (next ks) [(td-border :white (str k)) (colorize-core origin {(rest ks) v})]
-                                                (and pv mv) [(td :white (str k)) (td :lightcoral (str mv))]
-                                                mv [(td-border :lightcoral (str k)) (td-border :lightcoral (str mv))]
-                                                pv [(td) (td)]
-                                                (map? v) [(td-border :white (str k)) (colorize-core origin {(rest ks) v})]
-                                                (coll? v) [(td-border :white (str k)) (colorize-core origin v)]
-                                                :else [(td (str k)) (td (str v))]))
-                                        (into (table-row)
-                                              (cond
-                                                (and mv pv) [(td-border) (td-border :lightgreen (str pv))]
-                                                (and (not (coll? v)) pv) [(td (str k)) (td)]
-                                                pv [(td-border :lightgreen (str k)) (td-border :lightgreen (str pv))]
-                                                (coll? v) [(td) (td)]
-                                                :else [(td) (td)]))])))))
+                         (for [[k v] preprocessed]
+                           (let [pv (:+ v)
+                                 mv (:- v)
+                                 origin (get a-map k)]
+                             [(into (table-row)
+                                    (cond
+                                      (not (map? v)) [(td (str k)) (td (colorize-core origin v))]
+                                      (and pv mv) [(td :white (str k)) (td :lightcoral (str mv))]
+                                      mv [(td-border :lightcoral (str k)) (td-border :lightcoral (str mv))]
+                                      pv [(td) (td)]
+                                      (map? v) [(td-border :white (str k)) (colorize-core origin v)]))
+                              (into (table-row)
+                                    (cond
+                                      (and mv pv) [(td-border) (td-border :lightgreen (str pv))]
+                                      pv [(td-border :lightgreen (str k)) (td-border :lightgreen (str pv))]
+                                      :else [(td) (td)]))])))
                  (td "}")])))]
     (if
       (map? diff)
@@ -264,5 +230,4 @@
                [:td (text-area (get @state :diff-str "No diff calculated"))]
                [:td {:style {:vertical-align :top}} colorized]
                [:td (text-area (get @state :commit "No diff calculated"))]]]]
-     [:p (str (get @state :error " "))]
-     [:p (str (get @state :diff " "))]]))
+     [:p (str (get @state :error " "))]]))
