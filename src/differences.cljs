@@ -21,7 +21,9 @@
             [:th {:style {:border "1px solid black"}}
              "Expected"]
             [:th {:style {:border "1px solid black"}}
-             "Actual"]]]
+             "Actual"]
+            [:th {:style {:border "1px solid black"}}
+             "Mismatch"]]]
    [:tbody (map (fn [{:keys [path expected actual mismatch]}]
                   (when-not (empty? path)
                     [:tr {:key (apply str [path expected actual mismatch])
