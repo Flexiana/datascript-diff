@@ -8,6 +8,10 @@
   [a diff]
   ((resolve 'seq-diff/seq-commit) a diff))
 
+(defn- seq-revert-diff
+  [diff]
+  ((resolve 'seq-diff/seq-revert-diff) diff))
+
 (defn expansion
   "Collects what has been added, or modified"
   [a b]
@@ -63,3 +67,22 @@
                         (every? coll? [ov v]) (assoc-in acc ks (seq-commit ov v))))))
     a-map diff))
 
+(defn map-revert-diff
+  [diff]
+  (->> (map (fn [[ks v]]
+              (let [pv (:+ v)
+                    mv (:- v)]
+                (cond
+                  (or pv mv) (cond-> {}
+                               pv (assoc ks {:- pv})
+                               mv (assoc ks {:+ mv}))
+                  (map? v) {ks (map-revert-diff v)}
+                  (coll? v) {ks (seq-revert-diff v)}
+                  :else v)))
+            diff)
+       (into {})))
+
+(defn map-revert
+  [b-map diff]
+  (->> (map-revert-diff diff)
+       (map-commit b-map)))

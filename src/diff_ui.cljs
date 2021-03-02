@@ -70,7 +70,6 @@
   [:div (str k " ") [:a {:style {:background color
                                  :width      :max-content}} v]])
 
-
 (defn table-row
   []
   ^{:key (gensym)}
@@ -123,7 +122,6 @@
             [s]
             (let [extended (extend-seq a-value diff)
                   merged (map (fn [a d] [a d]) extended diff)]
-              (println "merged " merged)
               (table
                 ^{:key (gensym)}
                 [:tr (td "(")

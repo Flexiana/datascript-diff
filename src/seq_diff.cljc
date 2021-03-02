@@ -98,7 +98,6 @@
 (defn seq-revert-diff
   [diff]
   (map (fn [v]
-         (println v)
          (let [pv (:+ v)
                mv (:- v)]
            (cond

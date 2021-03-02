@@ -6,6 +6,7 @@
                       seq-revert
                       seq-commit]]
     [map-diff :refer [map-commit
+                      map-revert
                       map-diff
                       narrowing
                       expansion]]))
@@ -74,7 +75,11 @@
   (is (= b (->> (map-diff a b)
                 (map-commit a))) (format "%s -> %s" a b))
   (is (= a (->> (map-diff b a)
-                (map-commit b))) (format "%s -> %s" b a)))
+                (map-commit b))) (format "%s -> %s" b a))
+  (is (= a (->> (map-diff a b)
+                (map-revert b))) (format "%s -> %s" a b))
+  (is (= b (->> (map-diff b a)
+                (map-revert a))) (format "%s -> %s" b a)))
 
 (deftest map-diff-commit-test
   (map-full-test {} {})
@@ -100,12 +105,16 @@
                   :a "c"
                   :b "apple"}))
 
-(defn seq-diff-commit-test
+(defn seq-diff-commit-revert-test
   [a b]
   (is (= b (->> (seq-diff a b)
                 (seq-commit a))) (format "%s -> %s" a b))
   (is (= a (->> (seq-diff b a)
-                (seq-commit b))) (format "%s -> %s" b a)))
+                (seq-commit b))) (format "%s -> %s" b a))
+  (is (= a (->> (seq-diff a b)
+                (seq-revert b))) (format "%s -> %s" a b))
+  (is (= b (->> (seq-diff b a)
+                (seq-revert a))) (format "%s -> %s" b a)))
 
 (deftest seq-test
   (is (= [:b] (common-ordered-part [:a :b :c] [:c :b :d])))
@@ -115,20 +124,20 @@
   (is (= [1 4] (common-ordered-part [1 2 3 4] [1 4 5 6 7])))
   (is (= [1 4] (common-ordered-part [1 4 5 6 7] [1 2 3 4])))
   (is (= [1] (common-ordered-part [1 4 5 6 7] [7 5 1])))
-  (seq-diff-commit-test [:c :b :d] [:a :b :c])
-  (seq-diff-commit-test [1 2 3 4 5 6] [4 5 6])
-  (seq-diff-commit-test [1 2 3 4 5 6] [4 5 6])
-  (seq-diff-commit-test [:a :b :c] [:c :b :d])
-  (seq-diff-commit-test [1 2 [3 1]] [1 2 [3 2]]))
+  (seq-diff-commit-revert-test [:c :b :d] [:a :b :c])
+  (seq-diff-commit-revert-test [1 2 3 4 5 6] [4 5 6])
+  (seq-diff-commit-revert-test [1 2 3 4 5 6] [4 5 6])
+  (seq-diff-commit-revert-test [:a :b :c] [:c :b :d])
+  (seq-diff-commit-revert-test [1 2 [3 1]] [1 2 [3 2]]))
 
 (deftest map-in-seq
-  (seq-diff-commit-test [{:a {:a 2}}] [{:a {:a 3}}])
-  (seq-diff-commit-test [{:a {:a 2}}] [{:a {:a 3}}])
-  (seq-diff-commit-test [1 2 {:a {:a 2}} 1 2] [{:a {:a 3}} 1 2])
-  (seq-diff-commit-test [1 2 {:a {:a 3}} 2 1 2] [1 2 {:a {:a 2}} 1 2])
-  (seq-diff-commit-test [{:a {:a {:a 1 :b 2}} :b 2 :d {:e 5}}] [{:a {:a {:a 2} :b 2} :b 3}])
-  (seq-diff-commit-test [1 1 2 3 5 7 10 18 {:a "b"} 19 13 15]
-                        [1 "a" "b" 1 3 1 1 2 18 {:a "c"} 19 4 5 6 7 8 9 10 11 12])
+  (seq-diff-commit-revert-test [{:a {:a 2}}] [{:a {:a 3}}])
+  (seq-diff-commit-revert-test [{:a {:a 2}}] [{:a {:a 3}}])
+  (seq-diff-commit-revert-test [1 2 {:a {:a 2}} 1 2] [{:a {:a 3}} 1 2])
+  (seq-diff-commit-revert-test [1 2 {:a {:a 3}} 2 1 2] [1 2 {:a {:a 2}} 1 2])
+  (seq-diff-commit-revert-test [{:a {:a {:a 1 :b 2}} :b 2 :d {:e 5}}] [{:a {:a {:a 2} :b 2} :b 3}])
+  (seq-diff-commit-revert-test [1 1 2 3 5 7 10 18 {:a "b"} 19 13 15]
+                               [1 "a" "b" 1 3 1 1 2 18 {:a "c"} 19 4 5 6 7 8 9 10 11 12])
   (is (= (first (:to-print (seq-diff [{:a 2} 2] [{:a 3} 2])))
          (:to-print (map-diff {:a 2} {:a 3}))))
   (is (= (first (:+ (seq-diff [{:a 2} 2] [{:a 3} 2])))
@@ -140,20 +149,3 @@
          (:- (map-diff {:a 2} {:a 3}))))
   (is (= (first (:+ (seq-diff [{:a 2} 2] [{:a 3} 2])))
          (:+ (map-diff {:a 2} {:a 3})))))
-
-(defn seq-diff-revert-test
-  [a b]
-  (is (= a (->> (seq-diff a b)
-                (seq-revert b))) (format "%s -> %s" a b))
-  (is (= b (->> (seq-diff b a)
-                (seq-revert a))) (format "%s -> %s" b a)))
-
-(seq-diff-revert-test [] [])
-(seq-diff-revert-test [1] [])
-(seq-diff-revert-test [] [1])
-(seq-diff-revert-test [1 [1]] [])
-(seq-diff-revert-test [] [1 [2]])
-(seq-diff-revert-test [1 [2]] [2 [1]])
-
-(seq-diff-revert-test [1 {:a 1}] [2 {}])
-
