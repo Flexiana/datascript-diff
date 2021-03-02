@@ -33,18 +33,16 @@
   [a b]
   (cond
     (every? map? [a b]) (map-diff a b)
-    (but
-      (some map? [a b])
-      (every? coll? [a b])) (seq-diff a b)
-    :else {}))
+    (every? coll? [a b]) (seq-diff a b)
+    :else nil))
 
 (defn- diffs
   [{:keys [a-input b-input]}]
   (let [a (edn/read-string a-input)
         b (edn/read-string b-input)
         difference (diff a b)
-        commit (commit a difference)
-        revert (revert b difference)]
+        commit (when difference (commit a difference))
+        revert (when difference (revert b difference))]
     (if (empty? difference)
       [{} {} {} "" {}]
       [a difference commit revert])))
@@ -175,11 +173,13 @@
       (color-map2 a-value diff)
       (color-seq diff))))
 
+(defonce width (r/atom 175))
+
 (defn- copy-master-width!
   []
-  (str (try
-         (-> js/document (.getElementById "master") .-offsetWidth)
-         (catch :default e 175)) "px"))
+  (let [w (try (-> js/document (.getElementById "master") .-offsetWidth)
+               (catch :default e @width))]
+    (str (reset! width w) "px")))
 
 (defn- visual-div
   [text id]
@@ -243,7 +243,8 @@
         [:td (text-area a-input (partial on-change state :a-input))]
         [:td (text-area b-input (partial on-change state :b-input))]
         [:td {:style {:vertical-align :top}} colorized]]]]
-     [:table
+     [:table {:style {:margin :auto
+                      :width  :max-content}}
       [:thead
        [:tr
         [:th "Revert diff on Map B"]
