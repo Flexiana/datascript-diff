@@ -10,6 +10,34 @@
            want-map]}]
   (map-diff have-map want-map))
 
+(defn map-diffs-ui [state]
+  [:table  {:style {:margin :auto
+                    :border "1px solid black"
+                    :border-collapse "collapse"
+                    :text-align "center"}}
+   [:thead [:tr {:style {:border "1px solid black"}}
+            [:th {:style {:border "1px solid black"}}
+             "Path"]
+            [:th {:style {:border "1px solid black"}}
+             "Expected"]
+            [:th {:style {:border "1px solid black"}}
+             "Actual"]
+            [:th {:style {:border "1px solid black"}}
+             "Mismatch"]]]
+   [:tbody (map (fn [{:keys [path expected actual mismatch]}]
+                  (when-not (empty? path)
+                    [:tr {:key (apply str [path expected actual mismatch])
+                          :style {:border "1px solid black"}}
+                     [:td {:style {:border "1px solid black"}}
+                      (str path)]
+                     [:td {:style {:border "1px solid black"}}
+                      (str expected)]
+                     [:td {:style {:border "1px solid black"}}
+                      (str actual)]
+                     [:td {:style {:border "1px solid black"}}
+                      (name mismatch)]]))
+                (map-diffs-from-editor state))]])
+
 (defonce *editor (r/atom {}))
 
 (defn ui [state]
@@ -33,7 +61,7 @@
                                                                                -target
                                                                                -value))
                                                                           (catch js/Error e
-                                                                            e)))}]]]
+                                                                            nil)))}]]]
              [:td [:label {:for "want-map"}
                    [:textarea {:style     {:font-size "18pt"}
                                :type      :textarea
@@ -45,12 +73,6 @@
                                                                                -target
                                                                                -value))
                                                                           (catch js/Error e
-                                                                            e)))}]]]
+                                                                            nil)))}]]]
              [:td [:label {:for "diffs"}
-                   [:ul
-                    (keep (fn [{:keys [path expected actual mismatch]}]
-                            [:<>
-                             [:li
-                              (reduce #(str %1 %2 " ") ""
-                                      [path expected actual mismatch])]])
-                          (map-diffs-from-editor @*editor))]]]]]]])
+                   [map-diffs-ui @state]]]]]]])
