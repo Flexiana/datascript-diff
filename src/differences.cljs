@@ -48,5 +48,9 @@
                                                                             e)))}]]]
              [:td [:label {:for "diffs"}
                    [:ul
-                    (for [{:keys [path expected actual mismatch]} (map-diffs-from-editor @*editor)]
-                      [:li (pr-str path expected actual mismatch)])]]]]]]])
+                    (keep (fn [{:keys [path expected actual mismatch]}]
+                            [:<>
+                             [:li
+                              (reduce #(str %1 %2 " ") ""
+                                      [path expected actual mismatch])]])
+                          (map-diffs-from-editor @*editor))]]]]]]])
