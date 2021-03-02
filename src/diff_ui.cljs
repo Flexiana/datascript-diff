@@ -44,7 +44,7 @@
         commit (when difference (commit a difference))
         revert (when difference (revert b difference))]
     (if (empty? difference)
-      [{} {} {} "" {}]
+      []
       [a difference commit revert])))
 
 (defn- update-diff!
@@ -57,13 +57,7 @@
                    (diffs @state)
                    (catch :default e
                      (swap! state assoc :error (.-message e))
-                     [{} {} {} {}]))
-        commit (if (empty? commit)
-                 "No diff calculated"
-                 (str commit))
-        revert (if (empty? revert)
-                 "No diff calculated"
-                 (str revert))]
+                     []))]
     (swap! state assoc
       :a-value a-value
       :diff diff
@@ -137,7 +131,8 @@
                            (= :nil change) (td :lightgrey "nil")
                            (:- change) (td :lightcoral (str (:- change)))
                            (every? coll? [origin change]) (td (colorize-core origin change))
-                           origin (td :lightgrey (str origin)))))
+                           origin (td :lightgrey (str origin))
+                           :else (td))))
                  (into (table-row)
                        (for [c s]
                          (cond
@@ -233,12 +228,12 @@
         colorized (colorize a-value diff)]
     [:div {:style {:margin :auto
                    :width  :max-content}}
-     [:table#main {:style {:margin :auto
-                           :width  :max-content}}
+     [:table {:style {:margin :auto
+                      :width  :max-content}}
       [:thead
        [:tr
-        [:th "Map A"]
-        [:th "Map B"]
+        [:th "Input A"]
+        [:th "Input B"]
         [:th "Visual diff"]]]
       [:tbody
        [:tr
@@ -249,12 +244,12 @@
                       :width  :max-content}}
       [:thead
        [:tr
-        [:th "Revert diff on Map B"]
-        [:th "Commit diff on Map A"]
+        [:th "Revert diff on Input B"]
+        [:th "Commit diff on Input A"]
         [:th "Calculated diff"]]]
       [:tbody
        [:tr
-        [:td (text-area (get @state :revert "No diff calculated"))]
-        [:td (text-area (get @state :commit "No diff calculated"))]
-        [:td (visual-div (str diff) "slave")]]]]
+        [:td (text-area (str (get @state :revert "No diff calculated")))]
+        [:td (text-area (str (get @state :commit "No diff calculated")))]
+        [:td (visual-div (if diff (str diff) "No diff calculated") "slave")]]]]
      [:p (str (get @state :error " "))]]))
