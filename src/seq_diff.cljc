@@ -8,6 +8,10 @@
   [a b]
   ((resolve 'map-diff/map-commit) a b))
 
+(defn map-revert-diff
+  [v]
+  ((resolve 'map-diff/map-revert-diff) v))
+
 (defn- get-indexes
   [v e]
   (keep-indexed (fn [idx v] (when (= e v) idx)) (vec v)))
@@ -91,3 +95,26 @@
                   (every? nil? [pv mv]) (conj acc orig))))
       [] merged)))
 
+(defn seq-revert-diff
+  [diff]
+  (map (fn [v]
+         (println v)
+         (let [pv (:+ v)
+               mv (:- v)]
+           (cond
+             (or pv mv) (cond-> {}
+                          pv (assoc :- pv)
+                          mv (assoc :+ mv))
+             (map? v) (map-revert-diff v)
+             (coll? v) (seq-revert-diff v)
+             :else v)))
+       diff))
+
+(defn seq-revert
+  [b-seq diff]
+  (->> (seq-revert-diff diff)
+       (seq-commit b-seq)))
+
+(seq-revert [3 [1 2 3]] (seq-diff [1 2 3 []] [3 [1 2 3]]))
+
+(seq-revert-diff (seq-diff [1 2 3 []] [3 [1 2 3]]))

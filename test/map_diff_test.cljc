@@ -3,6 +3,7 @@
     [clojure.test :refer :all]
     [seq-diff :refer [seq-diff
                       common-ordered-part
+                      seq-revert
                       seq-commit]]
     [map-diff :refer [map-commit
                       map-diff
@@ -34,8 +35,6 @@
   [a b]
   (-> (expansion a b)
       (narrowing a b)))
-
-(step-2 {:a "a"} {})
 
 (deftest step-two
   (is (= {[:a] {:- "a"}} (step-2 {:a "a"} {})))
@@ -142,16 +141,19 @@
   (is (= (first (:+ (seq-diff [{:a 2} 2] [{:a 3} 2])))
          (:+ (map-diff {:a 2} {:a 3})))))
 
-(seq-diff [1 2 [3 1]] [1 2 [3 2]])
-(map-diff {:c 2 :a [1 2 [3 1]]} {:c 2 :a [1 2 [3 2]]})
+(defn seq-diff-revert-test
+  [a b]
+  (is (= a (->> (seq-diff a b)
+                (seq-revert b))) (format "%s -> %s" a b))
+  (is (= b (->> (seq-diff b a)
+                (seq-revert a))) (format "%s -> %s" b a)))
 
-(is (= (:to-print (seq-diff [1 2 [3 1]] [1 2 [3 2]]))
-       (get-in (map-diff {:c 2 :a [1 2 [3 1]]} {:c 2 :a [1 2 [3 2]]}) [:to-print [:a]])))
+(seq-diff-revert-test [] [])
+(seq-diff-revert-test [1] [])
+(seq-diff-revert-test [] [1])
+(seq-diff-revert-test [1 [1]] [])
+(seq-diff-revert-test [] [1 [2]])
+(seq-diff-revert-test [1 [2]] [2 [1]])
 
-(map-diff {:c 2 :b [1 2 3 4 5 6]} {:d 1 :c 3 :b [4 5 6]})
+(seq-diff-revert-test [1 {:a 1}] [2 {}])
 
-(map-diff {:a {:b 2} :d 2 :c {:b [1 2 3 4 5 6]}}
-          {:a {:b 3} :d 1 :c {:b [4 5 6] :d [4 5 6]}})
-
-(map-diff {:a 3 :d 2 :c {:b [1 2 3 4 5 6]}} {:d 1 :c {:b [4 5 6]
-                                                      :d [4 5 6]}})
