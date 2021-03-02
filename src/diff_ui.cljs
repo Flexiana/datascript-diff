@@ -133,13 +133,15 @@
                  (into (table-row)
                        (for [[origin change] merged]
                          (cond
-                           (nil? origin) (td)
+                           (every? nil? [origin change]) (td)
+                           (= :nil change) (td :lightgrey "nil")
                            (:- change) (td :lightcoral (str (:- change)))
                            (every? coll? [origin change]) (td (colorize-core origin change))
                            origin (td :lightgrey (str origin)))))
                  (into (table-row)
                        (for [c s]
                          (cond
+                           (= :nil (:+ c)) (td :lightgreen "nil")
                            (:+ c) (td :lightgreen (str (:+ c)))
                            :else (td))))
                  (td ")")])))
