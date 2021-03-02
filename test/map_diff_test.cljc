@@ -73,13 +73,13 @@
 (defn map-full-test
   [a b]
   (is (= b (->> (map-diff a b)
-                (map-commit a))) (format "%s -> %s" a b))
+                (map-commit a))) (format "commit %s -> %s" a b))
   (is (= a (->> (map-diff b a)
-                (map-commit b))) (format "%s -> %s" b a))
+                (map-commit b))) (format "commit %s -> %s" b a))
   (is (= a (->> (map-diff a b)
-                (map-revert b))) (format "%s -> %s" a b))
+                (map-revert b))) (format "revert %s -> %s" b a))
   (is (= b (->> (map-diff b a)
-                (map-revert a))) (format "%s -> %s" b a)))
+                (map-revert a))) (format "revert %s -> %s" a b)))
 
 (deftest map-diff-commit-test
   (map-full-test {} {})
@@ -108,13 +108,13 @@
 (defn seq-diff-commit-revert-test
   [a b]
   (is (= b (->> (seq-diff a b)
-                (seq-commit a))) (format "%s -> %s" a b))
+                (seq-commit a))) (format "commit %s -> %s" a b))
   (is (= a (->> (seq-diff b a)
-                (seq-commit b))) (format "%s -> %s" b a))
+                (seq-commit b))) (format "commit %s -> %s" b a))
   (is (= a (->> (seq-diff a b)
-                (seq-revert b))) (format "%s -> %s" a b))
+                (seq-revert b))) (format "revert %s -> %s" b a))
   (is (= b (->> (seq-diff b a)
-                (seq-revert a))) (format "%s -> %s" b a)))
+                (seq-revert a))) (format "revert %s -> %s" a b)))
 
 (deftest seq-test
   (is (= [:b] (common-ordered-part [:a :b :c] [:c :b :d])))
