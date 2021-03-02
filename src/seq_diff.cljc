@@ -12,6 +12,10 @@
   [v]
   ((resolve 'map-diff/map-revert-diff) v))
 
+(defn not-map-but-coll?
+  [x]
+  (and (not (map? x)) (coll? x)))
+
 (defn- get-indexes
   [v e]
   (keep-indexed (fn [idx v] (when (= e v) idx)) (vec v)))
@@ -61,7 +65,7 @@
         (< a-distance b-distance) (recur av (vec (rest bv)) common (conj acc {:+ (first bv)}))
         (> a-distance b-distance) (recur (vec (rest av)) bv common (conj acc {:- (first av)}))
         (and (= a-distance b-distance) (every? map? [(first av) (first bv)])) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (map-diff (first av) (first bv))))
-        (and (= a-distance b-distance) (every? coll? [(first av) (first bv)])) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (seq-diff (first av) (first bv))))
+        (and (= a-distance b-distance) (every? not-map-but-coll? [(first av) (first bv)])) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (seq-diff (first av) (first bv))))
         (= 0 a-distance b-distance) (recur (vec (rest av)) (vec (rest bv)) (vec (rest common)) (conj acc nil))
         (= a-distance b-distance) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (if (= (first av) (first bv)) (first av) {:- (first av) :+ (first bv)})))))))
 
@@ -91,7 +95,7 @@
                   pv (conj acc pv)
                   mv acc
                   (every? map? [orig change]) (conj acc (map-commit orig change))
-                  (every? coll? [orig change]) (conj acc (seq-commit orig change))
+                  (every? not-map-but-coll? [orig change]) (conj acc (seq-commit orig change))
                   (every? nil? [pv mv]) (conj acc orig))))
       [] merged)))
 
@@ -113,7 +117,3 @@
   [b-seq diff]
   (->> (seq-revert-diff diff)
        (seq-commit b-seq)))
-
-(seq-revert [3 [1 2 3]] (seq-diff [1 2 3 []] [3 [1 2 3]]))
-
-(seq-revert-diff (seq-diff [1 2 3 []] [3 [1 2 3]]))

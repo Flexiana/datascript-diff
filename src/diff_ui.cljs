@@ -13,6 +13,10 @@
 
 (defonce state (r/atom {}))
 
+(defn not-map-but-coll?
+  [x]
+  (and (not (map? x)) (coll? x)))
+
 (defn commit
   [a d]
   (if (map? a)
@@ -25,15 +29,11 @@
     (map-revert a d)
     (seq-revert a d)))
 
-(defn but
-  [x y]
-  (and (not x) y))
-
 (defn diff
   [a b]
   (cond
     (every? map? [a b]) (map-diff a b)
-    (every? coll? [a b]) (seq-diff a b)
+    (every? not-map-but-coll? [a b]) (seq-diff a b)
     :else nil))
 
 (defn- diffs

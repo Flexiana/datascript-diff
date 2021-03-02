@@ -12,6 +12,10 @@
   [diff]
   ((resolve 'seq-diff/seq-revert-diff) diff))
 
+(defn not-map-but-coll?
+  [x]
+  (and (not (map? x)) (coll? x)))
+
 (defn expansion
   "Collects what has been added, or modified"
   [a b]
@@ -19,9 +23,8 @@
             (let [vector-key (if (coll? k) k [k])
                   a-value (get-in a vector-key)]
               (cond
-                (and (map? a-value) (map? v)) (reduce (fn [acc [k v]]
-                                                        (assoc acc (concat vector-key k) v)) acc (expansion a-value v))
-                (and (coll? a-value) (coll? v) (not= a-value v)) (assoc acc vector-key (seq-diff a-value v))
+                (every? map? [a-value v]) (reduce (fn [acc [k v]] (assoc acc (concat vector-key k) v)) acc (expansion a-value v))
+                (every? not-map-but-coll? [a-value v]) (assoc acc vector-key (seq-diff a-value v))
                 (nil? a-value) (assoc acc vector-key {:+ v})
                 (not= v a-value) (-> (assoc acc vector-key {:- a-value :+ v}))
                 :else acc))) {} b))
@@ -34,10 +37,10 @@
             (let [vector-key (if (coll? k) k [k])
                   b-value (get-in b vector-key)]
               (cond
-                (and (map? b-value) (map? a-value)) (let [d (narrowing {} a-value b-value)]
-                                                      (if (empty? d)
-                                                        acc
-                                                        (reduce (fn [acc [k v]] (assoc acc (concat vector-key k) v)) acc d)))
+                (every? map? [b-value a-value]) (let [d (narrowing {} a-value b-value)]
+                                                  (if (empty? d)
+                                                    acc
+                                                    (reduce (fn [acc [k v]] (assoc acc (concat vector-key k) v)) acc d)))
                 (nil? b-value) (assoc-in acc [vector-key] {:- a-value})
                 :else acc)))
     acc
@@ -64,7 +67,7 @@
                         pv (assoc-in acc ks pv)
                         mv (dissoc acc (first ks))
                         (every? map? [ov v]) (assoc-in acc ks (map-commit ov v))
-                        (every? coll? [ov v]) (assoc-in acc ks (seq-commit ov v))))))
+                        (every? not-map-but-coll? [ov v]) (assoc-in acc ks (seq-commit ov v))))))
     a-map diff))
 
 (defn map-revert-diff
