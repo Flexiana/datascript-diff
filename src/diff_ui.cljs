@@ -1,10 +1,13 @@
 (ns diff-ui
   (:require [map-diff :refer [map-diff
+                              map-revert
                               map-commit]]
             [seq-diff :refer [extend-seq
                               seq-diff
+                              seq-revert
                               seq-commit]]
             [reagent.core :as r]
+
             [clojure.string :as str]
             [clojure.edn :as edn]))
 
@@ -16,11 +19,17 @@
     (map-commit a d)
     (seq-commit a d)))
 
+(defn revert
+  [a d]
+  (if (map? a)
+    (map-revert a d)
+    (seq-revert a d)))
+
 (defn but
   [x y]
   (and (not x) y))
 
-(defn make-diff
+(defn diff
   [a b]
   (cond
     (every? map? [a b]) (map-diff a b)
@@ -33,37 +42,35 @@
   [{:keys [a-input b-input]}]
   (let [a (edn/read-string a-input)
         b (edn/read-string b-input)
-
-        difference (make-diff a b)]
+        difference (diff a b)
+        commit (commit a difference)
+        revert (revert b difference)]
     (if (empty? difference)
-      [{} {} "" {}]
-      [a difference (commit a difference)])))
+      [{} {} {} "" {}]
+      [a difference commit revert])))
 
 (defn- update-diff!
   [state]
-  (let [[a-value diff commit] (try
-                                (swap! state dissoc :error)
-                                (diffs @state)
-                                (catch :default e
-                                  (swap! state assoc :error (.-message e))
-                                  [{} {} {}]))
-        diff-str (if (empty? diff)
-                   "No diff calculated"
-                   (-> diff
-                       str
-                       (str/replace #"]" "]\n")
-                       (str/replace #"}" "}\n")
-                       (str/replace #"\)" ")\n")
-                       (str/replace #"\n+" "\n")
-                       str/join))
+  (let [[a-value
+         diff
+         commit
+         revert] (try
+                   (swap! state dissoc :error)
+                   (diffs @state)
+                   (catch :default e
+                     (swap! state assoc :error (.-message e))
+                     [{} {} {} {}]))
         commit (if (empty? commit)
                  "No diff calculated"
-                 (str commit))]
+                 (str commit))
+        revert (if (empty? revert)
+                 "No diff calculated"
+                 (str revert))]
     (swap! state assoc
       :a-value a-value
       :diff diff
       :commit commit
-      :diff-str diff-str)))
+      :revert revert)))
 
 (defn- diff-div
   [color k v]
@@ -168,24 +175,34 @@
       (color-map2 a-value diff)
       (color-seq diff))))
 
+(defn- copy-master-width!
+  []
+  (str (try
+         (-> js/document (.getElementById "master") .-offsetWidth)
+         (catch :default e 175)) "px"))
+
 (defn- visual-div
-  [text]
-  [:div {:style {:width        :max-content
-                 :overflow     :auto
-                 :resize       :both
-                 :min-width    "175px"
-                 :border-style :solid
-                 :border-width :thin
-                 :border-color :gray
-                 :height       "380px"}} text])
+  [text id]
+  [:div
+   {:id    id
+    :style {:width        (if (= id "master")
+                            :max-content
+                            (copy-master-width!))
+            :overflow     :auto
+            :resize       :both
+            :min-width    "175px"
+            :border-style :solid
+            :border-width :thin
+            :border-color :gray
+            :height       "380px"}} text])
 
 (defn- colorize
   [a-value diff]
   (let [c (colorize-core a-value diff)]
     (if (not-empty diff)
-      (into (visual-div "")
+      (into (visual-div "" "master")
             (rest c))
-      (visual-div "No diff calculated"))))
+      (visual-div "No diff calculated" "master"))))
 
 (defn- text-area
   ([value]
@@ -208,7 +225,7 @@
   (swap! state assoc k (-> event .-target .-value))
   (update-diff! state))
 
-(defn diff
+(defn diff-ui
   [state]
   (let [{:keys [a-input b-input a-value diff]} @state
         colorized (colorize a-value diff)]
@@ -216,16 +233,25 @@
                    :width  :max-content}}
      [:table#main {:style {:margin :auto
                            :width  :max-content}}
-      [:thead [:tr
-               [:th "Map A"]
-               [:th "Map B"]
-               [:th "Calculated diff"]
-               [:th "Visual diff"]
-               [:th "Commit diff on Map A"]]]
-      [:tbody [:tr
-               [:td (text-area a-input (partial on-change state :a-input))]
-               [:td (text-area b-input (partial on-change state :b-input))]
-               [:td (text-area (get @state :diff-str "No diff calculated"))]
-               [:td {:style {:vertical-align :top}} colorized]
-               [:td (text-area (get @state :commit "No diff calculated"))]]]]
+      [:thead
+       [:tr
+        [:th "Map A"]
+        [:th "Map B"]
+        [:th "Visual diff"]]]
+      [:tbody
+       [:tr
+        [:td (text-area a-input (partial on-change state :a-input))]
+        [:td (text-area b-input (partial on-change state :b-input))]
+        [:td {:style {:vertical-align :top}} colorized]]]]
+     [:table
+      [:thead
+       [:tr
+        [:th "Revert diff on Map B"]
+        [:th "Commit diff on Map A"]
+        [:th "Calculated diff"]]]
+      [:tbody
+       [:tr
+        [:td (text-area (get @state :revert "No diff calculated"))]
+        [:td (text-area (get @state :commit "No diff calculated"))]
+        [:td (visual-div (str diff) "slave")]]]]
      [:p (str (get @state :error " "))]]))
