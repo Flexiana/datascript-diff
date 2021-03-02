@@ -21,13 +21,15 @@
             [:th {:style {:border "1px solid black"}}
              "Expected"]
             [:th {:style {:border "1px solid black"}}
-             "Actual"]
-            [:th {:style {:border "1px solid black"}}
-             "Mismatch"]]]
+             "Actual"]]]
    [:tbody (map (fn [{:keys [path expected actual mismatch]}]
                   (when-not (empty? path)
                     [:tr {:key (apply str [path expected actual mismatch])
-                          :style {:border "1px solid black"}}
+                          :style {:border "1px solid black"
+                                  :background-color (case mismatch
+                                                      :+ "rgba(51, 170, 51, .7)"
+                                                      :- "rgba(170, 51, 51, .7)"
+                                                      :diff "rgba(254, 241, 96, 0.7)")}}
                      [:td {:style {:border "1px solid black"}}
                       (str path)]
                      [:td {:style {:border "1px solid black"}}
