@@ -35,6 +35,22 @@
 (defn map-diffs-ui [state]
   [:table  {:style {:margin :auto
                     :border "1px solid black"
+(defn commit-diff->have! [*state {:keys [path expected actual mismatch]}]
+  (case mismatch
+    :diff (swap! *state update :have-map
+                 assoc-in path expected)
+    :+    (swap! *state update :have-map
+                 assoc-in path actual)
+    :-    (swap! *state update :have-map dissoc-in path))
+  (swap! *state #(assoc %
+                        :have-map-input
+                        (-> %
+                            :have-map
+                            str)
+                        :want-map-input
+                        (-> %
+                            :want-map
+                            str))))
                     :border-collapse "collapse"
                     :text-align "center"}}
    [:thead [:tr {:style {:border "1px solid black"}}
