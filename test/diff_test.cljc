@@ -91,74 +91,75 @@
   (is (match? [] (map-diff {} {})))
   (is (match? [] (map-diff {:a 1} {:a 1})))
   (is (match? [{:path     [:a]
-                :expected 2
+                :actual 2
                 :mismatch :-}] (map-diff {} {:a 2})))
-  (is (match? [{:path [:b], :expected 2, :mismatch :-}
-               {:path [:c], :expected 3, :mismatch :-}
-               {:path [:a], :actual 1, :mismatch :+}]
+  (is (match? [{:path [:b], :actual 2, :mismatch :-}
+               {:path [:c], :actual 3, :mismatch :-}
+               {:path [:a], :expected 1, :mismatch :+}]
               (map-diff {:a 1} {:b 2 :c 3})))
-  (is (match? [{:path [:b] :expected 2 :mismatch :-}
-               {:path [:c] :expected 3 :mismatch :-}
-               {:path [:a] :expected 1 :actual 2 :mismatch :diff}]
-              (map-diff {:a 1} {:a 2 :b 2 :c 3})))
+  (is (match? [{:path [:b], :actual 2, :mismatch :-}
+               {:path [:c], :actual 3, :mismatch :-}
+               {:path [:a], :actual 2, :expected 1, :mismatch :diff}]
+              (map-diff {:a 1} {:a 2 :b 2 :c 3})
+              ))
   (is (match? [{:path     [:a :a]
-                :expected 1, :mismatch :-}]
+                :actual 1, :mismatch :-}]
               (map-diff {} {:a {:a 1}})))
-  (is (match? [{:path [:a :a], :expected 1, :mismatch :-}
-               {:path [:b], :actual 2, :mismatch :+}]
+  (is (match? [{:path [:a :a], :actual 1, :mismatch :-}
+               {:path [:b], :expected 2, :mismatch :+}]
               (map-diff {:b 2} {:a {:a 1}})))
-  (is (match? [{:path [:b], :expected 3, :mismatch :-}
-               {:path [:a :a], :expected 1, :mismatch :-}
-               {:path [:a], :actual 2, :mismatch :+}]
+  (is (match? [{:path [:b], :actual 3, :mismatch :-}
+               {:path [:a :a], :actual 1, :mismatch :-}
+               {:path [:a], :expected 2, :mismatch :+}]
               (map-diff {:a 2} {:a {:a 1}
                                 :b 3})))
-  (is (match? [{:path [:b], :expected 3, :mismatch :-}
-               {:path [:c], :actual 3, :mismatch :+}]
+  (is (match? [{:path [:b], :actual 3, :mismatch :-}
+               {:path [:c], :expected 3, :mismatch :+}]
               (map-diff {:a {:a 1}
                          :c 3} {:a {:a 1}
                                 :b 3})))
-  (is (match? [{:path [:a :b], :expected 2, :mismatch :-}
-               {:path [:d :e], :actual 5, :mismatch :+}
-               {:path [:b], :expected 2, :actual 3, :mismatch :diff}
-               {:path [:a :a], :expected 1, :actual 2, :mismatch :diff}]
+  (is (match? [{:path [:a :b], :actual 2, :mismatch :-}
+               {:path [:d :e], :expected 5, :mismatch :+}
+               {:path [:b], :actual 3, :expected 2, :mismatch :diff}
+               {:path [:a :a], :actual 2, :expected 1, :mismatch :diff}]
               (map-diff {:a {:a 1}
                          :b 2 :d {:e 5}} {:a {:a 2 :b 2} :b 3})))
-  (is (match? [{:path [:a :b], :expected 2, :mismatch :-}
-               {:path [:a :a :b], :actual 2, :mismatch :+}
-               {:path [:d :e], :actual 5, :mismatch :+}
-               {:path [:a :a :a], :expected 1, :actual 2, :mismatch :diff}
-               {:path [:b], :expected 2, :actual 3, :mismatch :diff}]
+  (is (match? [{:path [:a :b], :actual 2, :mismatch :-}
+               {:path [:a :a :b], :expected 2, :mismatch :+}
+               {:path [:d :e], :expected 5, :mismatch :+}
+               {:path [:a :a :a], :actual 2, :expected 1, :mismatch :diff}
+               {:path [:b], :actual 3, :expected 2, :mismatch :diff}]
               (map-diff {:a {:a {:a 1 :b 2}}
                          :b 2 :d {:e 5}} {:a {:a {:a 2} :b 2} :b 3})))
-  (is (match? [{:path [:b 5], :actual 6, :mismatch :+}
-               {:path [:b 4], :actual 5, :mismatch :+}
-               {:path [:a], :actual "apple", :mismatch :+}
-               {:path [:b 3], :actual 4, :mismatch :+}
-               {:path [:b 0], :expected 1, :actual 4, :mismatch :diff}
-               {:path [:b 2], :expected 3, :actual 6, :mismatch :diff}
-               {:path [:b 1], :expected 2, :actual 5, :mismatch :diff}]
+  (is (match? [{:path [:b 5], :expected 6, :mismatch :+}
+               {:path [:b 4], :expected 5, :mismatch :+}
+               {:path [:a], :expected "apple", :mismatch :+}
+               {:path [:b 3], :expected 4, :mismatch :+}
+               {:path [:b 0], :actual 4, :expected 1, :mismatch :diff}
+               {:path [:b 2], :actual 6, :expected 3, :mismatch :diff}
+               {:path [:b 1], :actual 5, :expected 2, :mismatch :diff}]
               (map-diff {:a "apple"
                          :b [1 2 3 4 5 6]} {:b [4 5 6]})))
   (is (match? [] (map-diff {:x [{:a 3} 2]} {:x [{:a 3} 2]})))
-  (is (match? [{:path [:a 2], :expected :d, :actual :c, :mismatch :diff}
-               {:path [:a 0], :expected :c, :actual :a, :mismatch :diff}]
+  (is (match? [{:path [:a 2], :actual :c, :expected :d, :mismatch :diff}
+               {:path [:a 0], :actual :a, :expected :c, :mismatch :diff}]
               (map-diff {:a [:c :b :d]} {:a [:a :b :c]})))
-  (is (match? [{:path [:b], :expected 3, :mismatch :-}
-               {:path [:d :e], :actual 5, :mismatch :+}
-               {:path [:a :a], :expected 1, :actual 2, :mismatch :diff}]
+  (is (match? [{:path [:b], :actual 3, :mismatch :-}
+               {:path [:d :e], :expected 5, :mismatch :+}
+               {:path [:a :a], :actual 2, :expected 1, :mismatch :diff}]
               (map-diff {:a {:a 1
                              :b 2}
                          :d {:e 5}} {:a {:a 2
                                          :b 2}
                                      :b 3})))
-  (is (match? [{:path [:a 0], :expected 123, :mismatch :-}
-               {:path [:b 5], :actual 6, :mismatch :+}
-               {:path [:b 4], :actual 5, :mismatch :+}
-               {:path [:a], :actual "apple", :mismatch :+}
-               {:path [:b 3], :actual 4, :mismatch :+}
-               {:path [:b 0], :expected 1, :actual 4, :mismatch :diff}
-               {:path [:b 2], :expected 3, :actual 6, :mismatch :diff}
-               {:path [:b 1], :expected 2, :actual 5, :mismatch :diff}]
+  (is (match? [{:path [:a 0], :actual 123, :mismatch :-}
+               {:path [:b 5], :expected 6, :mismatch :+}
+               {:path [:b 4], :expected 5, :mismatch :+}
+               {:path [:a], :expected "apple", :mismatch :+}
+               {:path [:b 3], :expected 4, :mismatch :+}
+               {:path [:b 0], :actual 4, :expected 1, :mismatch :diff}
+               {:path [:b 2], :actual 6, :expected 3, :mismatch :diff}
+               {:path [:b 1], :actual 5, :expected 2, :mismatch :diff}]
               (map-diff {:a "apple"
                          :b [1 2 3 4 5 6]} {:b [4 5 6]
                                             :a [123]}))))

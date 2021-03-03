@@ -32,18 +32,18 @@
         diff-have-paths (difference idx-have idx-want)]
     (concat (keep (fn [df]
                     {:path     df
-                     :expected (get-in want df)
+                     :actual (get-in want df)
                      :mismatch :-}) diff-want-paths)
             (when-not (empty? (first diff-have-paths))
               (keep (fn [df]
                       {:path     df
-                       :actual   (get-in have df)
+                       :expected (get-in have df)
                        :mismatch :+}) diff-have-paths))
             (keep (fn [eq]
-                    (let [expected (get-in have eq)
-                          actual   (get-in want eq)]
+                    (let [actual (get-in have eq)
+                          expected (get-in want eq)]
                       (when-not (= expected actual)
                         {:path     eq
-                         :expected expected
-                         :actual   actual
+                         :actual expected
+                         :expected   actual
                          :mismatch :diff}))) eq-paths))))
