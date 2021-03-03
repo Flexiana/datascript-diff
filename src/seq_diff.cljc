@@ -8,31 +8,51 @@
   [a b]
   ((resolve 'map-diff/map-commit) a b))
 
+(defn map-revert-diff
+  [v]
+  ((resolve 'map-diff/map-revert-diff) v))
+
+(defn not-map-but-coll?
+  [x]
+  (and (not (map? x)) (coll? x)))
+
 (defn- get-indexes
   [v e]
   (keep-indexed (fn [idx v] (when (= e v) idx)) (vec v)))
-
-(defn- shorter
-  [x y]
-  (if (> (count x) (count y)) y x))
 
 (defn- longer
   [x y]
   (if (> (count (set x)) (count (set y))) x y))
 
-(defn- glue-ordered
+(defn- glue-right
   [acc e]
   (if (> e (last acc))
     (concat acc [e])
     acc))
 
-(defn- ordered-parts
+(defn- glue-left
+  [acc e]
+  (if (< e (first acc))
+    (concat [e] acc)
+    acc))
+
+(defn ordered-parts
   [indexes]
-  (loop [idxs indexes
+  (loop [before []
+         actual (first indexes)
+         after (rest indexes)
          acc []]
-    (if (empty? idxs)
+    (if
+      (nil? actual)
       acc
-      (recur (rest idxs) (conj acc (reduce glue-ordered [(first idxs)] (rest idxs)))))))
+      (recur
+        (conj before actual)
+        (first after)
+        (rest after)
+        (conj acc (concat
+                    (butlast (reduce glue-left [actual] before))
+                    [actual]
+                    (rest (reduce glue-right [actual] after))))))))
 
 (defn common-ordered-part
   [x y]
@@ -48,52 +68,70 @@
 
 (defn seq-diff
   [a-seq b-seq]
-  (let [diff (loop [av (vec a-seq)
-                    bv (vec b-seq)
-                    common (common-ordered-part a-seq b-seq)
-                    acc []]
+  (loop [av (vec a-seq)
+         bv (vec b-seq)
+         common (common-ordered-part a-seq b-seq)
+         acc []]
+    (let [a-distance (when common (.indexOf av (first common)))
+          b-distance (when common (.indexOf bv (first common)))
+          fav (first av)
+          fbv (first bv)
+          rvb (vec (rest bv))
+          rav (vec (rest av))]
+      (cond
+        (every? empty? [av bv]) acc
+        (< a-distance b-distance) (recur av rvb common (conj acc {:+ (or fbv :nil)}))
+        (> a-distance b-distance) (recur rav bv common (conj acc {:- (or fav :nil)}))
+        (and (= a-distance b-distance) (every? map? [fav fbv])) (recur rav rvb common (conj acc (map-diff fav fbv)))
+        (and (= a-distance b-distance) (every? not-map-but-coll? [fav fbv])) (recur rav rvb common (conj acc (seq-diff fav fbv)))
+        (= 0 a-distance b-distance) (recur rav rvb (vec (rest common)) (conj acc (if fav nil :nil)))
+        (= a-distance b-distance) (recur rav rvb common (conj acc (if (= fav fbv) fav {:- fav :+ fbv})))))))
 
-               (let [a-distance (when common (.indexOf av (first common)))
-                     b-distance (when common (.indexOf bv (first common)))]
-                 (cond
-                   (every? empty? [av bv]) acc
-                   (empty? av) (concat acc (map (fn [x] {:+ x}) bv))
-                   (empty? bv) (concat acc (map (fn [x] {:- x}) av))
-                   (empty? common) (recur (vec (rest av)) (vec (rest bv)) [] (conj acc (cond
-                                                                                         (every? map? [(first av) (first bv)]) (map-diff (first av) (first bv))
-                                                                                         (every? coll? [(first av) (first bv)]) (seq-diff (first av) (first bv))
-                                                                                         :else (if (= (first av) (first bv)) (first av) {:- (first av) :+ (first bv)}))))
-                   (< a-distance b-distance) (recur av (vec (rest bv)) common (conj acc {:+ (first bv)}))
-                   (> a-distance b-distance) (recur (vec (rest av)) bv common (conj acc {:- (first av)}))
-                   (and (= a-distance b-distance) (every? map? [(first av) (first bv)])) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (map-diff (first av) (first bv))))
-                   (and (= a-distance b-distance) (every? coll? [(first av) (first bv)])) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (seq-diff (first av) (first bv))))
-                   (= 0 a-distance b-distance) (recur (vec (rest av)) (vec (rest bv)) (vec (rest common)) (conj acc (first common)))
-                   (= a-distance b-distance) (recur (vec (rest av)) (vec (rest bv)) common (conj acc (if (= (first av) (first bv)) (first av) {:- (first av) :+ (first bv)}))))))]
-    {:+        (map :+ diff)
-     :-        (map :- diff)
-     :to-print (map #(get % :to-print %) diff)}))
+(defn extend-seq
+  [s d]
+  (loop [s s
+         d d
+         acc []]
+    (let [fs (first s)
+          fd (first d)
+          dp (:+ fd)
+          dm (:- fd)]
+      (cond
+        (empty? s) (concat acc (repeat (count d) nil))
+        (and dp dm) (recur (rest s) (rest d) (conj acc fs))
+        dp (recur s (rest d) (conj acc nil))
+        :else (recur (rest s) (rest d) (conj acc fs))))))
 
 (defn seq-commit
   [a-seq diff]
-  (loop [as a-seq
-         p (:+ diff)
-         m (:- diff)
-         acc []]
-    (let [a (first as)
-          pv (first p)
-          mv (first m)]
-      (cond
-        ;; add all remain: as empty
-        (empty? as) (concat acc (remove nil? p))
-        ;; if all map? replace it with map-commit
-        (every? map? [a pv mv]) (recur (rest as) (rest p) (rest m) (conj acc (map-commit a {:+ pv :- mv})))
-        ;; if all seq? replace it with seq-commit
-        (every? coll? [a pv mv]) (recur (rest as) (rest p) (rest m) (conj acc (seq-commit a {:+ pv :- mv})))
-        ;; replace: a eq mv and pv !nil
-        (and (= a mv) pv) (recur (rest as) (rest p) (rest m) (conj acc pv))
-        ;; delete: a eq mv and pv nil
-        (and (= a mv) (nil? pv)) (recur (rest as) (rest p) (rest m) acc)
-        ;; insert: mv nil and pv !nil
-        (and (nil? mv) pv) (recur as (rest p) (rest m) (conj acc pv))
-        ;; keep: mv nil and pv nil
-        (and (nil? mv) (nil? pv)) (recur (rest as) (rest p) (rest m) (conj acc a))))))
+  (let [extended (extend-seq a-seq diff)
+        merged (map (fn [a d] [a d]) extended diff)]
+    (reduce (fn [acc [orig change]]
+              (let [mv (:- change)
+                    pv (:+ change)]
+                (cond
+                  pv (conj acc pv)
+                  mv acc
+                  (every? map? [orig change]) (conj acc (map-commit orig change))
+                  (every? not-map-but-coll? [orig change]) (conj acc (seq-commit orig change))
+                  (every? nil? [pv mv]) (conj acc orig))))
+      [] merged)))
+
+(defn seq-revert-diff
+  [diff]
+  (map (fn [v]
+         (let [pv (:+ v)
+               mv (:- v)]
+           (cond
+             (or pv mv) (cond-> {}
+                          pv (assoc :- pv)
+                          mv (assoc :+ mv))
+             (map? v) (map-revert-diff v)
+             (coll? v) (seq-revert-diff v)
+             :else v)))
+       diff))
+
+(defn seq-revert
+  [b-seq diff]
+  (->> (seq-revert-diff diff)
+       (seq-commit b-seq)))
