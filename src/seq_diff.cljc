@@ -91,6 +91,7 @@
 
 (defn- extend-seq
   [s d]
+  {:pre [(every? not-map-but-coll? [s d])]}
   (loop [s s
          d d
          acc []]

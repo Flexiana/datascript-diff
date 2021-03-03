@@ -86,9 +86,9 @@
          [:table {:style {:cellpadding "0px"}}
           [:tbody body]]]])
 
-(defn td-border
+(defn td-underline
   ([]
-   (td-border :white ""))
+   (td-underline :white ""))
   ([color content]
    ^{:key (gensym)}
    [:td {:style {:border-bottom :solid
@@ -149,21 +149,21 @@
                                        origin (get a-map k)]
                                    [(into (table-row)
                                           (cond
-                                            (not (map? v)) [(td (str k)) (colorize-core origin v)]
                                             (and pv mv) [(td :white (str k)) (td :lightcoral (str mv))]
-                                            mv [(td-border :lightcoral (str k)) (td-border :lightcoral (str mv))]
+                                            mv [(td-underline :lightcoral (str k)) (td-underline :lightcoral (str mv))]
                                             pv [(td) (td)]
-                                            (map? v) [(td-border :white (str k)) (colorize-core origin v)]))
+                                            (map? v) [(td-underline :white (str k)) (colorize-core origin v)]
+                                            (not-map-but-coll? v) [(td (str k)) (colorize-core origin v)]
+                                            :else [(td-underline :lightgrey (str k)) (td-underline :lightgrey (str v))]))
                                     (into (table-row)
                                           (cond
-                                            (and mv pv) [(td-border) (td-border :lightgreen (str pv))]
-                                            pv [(td-border :lightgreen (str k)) (td-border :lightgreen (str pv))]
+                                            (and mv pv) [(td-underline) (td-underline :lightgreen (str pv))]
+                                            pv [(td-underline :lightgreen (str k)) (td-underline :lightgreen (str pv))]
                                             :else [(td) (td)]))])))
                        (td "}")]))))]
-    (if
-      (map? diff)
-      (color-map2 a-value diff)
-      (color-seq diff))))
+    (cond
+      (map? diff) (color-map2 a-value diff)
+      (not-map-but-coll? diff) (color-seq diff))))
 
 (defonce width (r/atom 175))
 
