@@ -24,19 +24,35 @@
   [x y]
   (if (> (count (set x)) (count (set y))) x y))
 
-(defn- glue-ordered
+(defn- glue-right
   [acc e]
   (if (> e (last acc))
     (concat acc [e])
     acc))
 
-(defn- ordered-parts
+(defn- glue-left
+  [acc e]
+  (if (< e (first acc))
+    (concat [e] acc)
+    acc))
+
+(defn ordered-parts
   [indexes]
-  (loop [idxs indexes
+  (loop [before []
+         actual (first indexes)
+         after (rest indexes)
          acc []]
-    (if (empty? idxs)
+    (if
+      (nil? actual)
       acc
-      (recur (rest idxs) (conj acc (reduce glue-ordered [(first idxs)] (rest idxs)))))))
+      (recur
+        (conj before actual)
+        (first after)
+        (rest after)
+        (conj acc (concat
+                    (butlast (reduce glue-left [actual] before))
+                    [actual]
+                    (rest (reduce glue-right [actual] after))))))))
 
 (defn common-ordered-part
   [x y]
@@ -64,8 +80,6 @@
           rav (vec (rest av))]
       (cond
         (every? empty? [av bv]) acc
-        ;(empty? av) (concat acc (map (fn [x] {:+ x}) bv))
-        ;(empty? bv) (concat acc (map (fn [x] {:- x}) av))
         (< a-distance b-distance) (recur av rvb common (conj acc {:+ (or fbv :nil)}))
         (> a-distance b-distance) (recur rav bv common (conj acc {:- (or fav :nil)}))
         (and (= a-distance b-distance) (every? map? [fav fbv])) (recur rav rvb common (conj acc (map-diff fav fbv)))
