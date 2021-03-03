@@ -90,8 +90,11 @@
 (deftest full-diff
   (is (match? [] (map-diff {} {})))
   (is (match? [] (map-diff {:a 1} {:a 1})))
+  (is (match? [] (map-diff {:a {0 1
+                                1 2}}
+                           {:a [1 2]})))
   (is (match? [{:path     [:a]
-                :actual 2
+                :actual   2
                 :mismatch :+}] (map-diff {} {:a 2})))
   (is (match? [{:path [:b], :actual 2, :mismatch :+}
                {:path [:c], :actual 3, :mismatch :+}
@@ -101,7 +104,7 @@
                {:path [:c], :actual 3, :mismatch :+}
                {:path [:a], :actual 1, :expected 2, :mismatch :diff}]
               (map-diff {:a 1} {:a 2 :b 2 :c 3})))
-  (is (match? [{:path     [:a :a]
+  (is (match? [{:path   [:a :a]
                 :actual 1, :mismatch :+}]
               (map-diff {} {:a {:a 1}})))
   (is (match? [{:path [:a :a], :actual 1, :mismatch :+}
