@@ -79,8 +79,7 @@
 
 (defn table
   [body]
-  [:div [:div {:style {:overflow     :auto
-                       :border-style :solid
+  [:div [:div {:style {:border-style :solid
                        :border-width :thin
                        :border-color :gray}}
          [:table {:style {:cellpadding "0px"}}

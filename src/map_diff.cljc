@@ -20,9 +20,10 @@
   "Collects what has been added, or modified"
   [a b]
   (reduce (fn [acc [k v]]
-            (let [vector-key (if (coll? k) k [k])
+            (let [vector-key [k]
                   a-value (get-in a vector-key)]
               (cond
+
                 (every? map? [a-value v]) (reduce (fn [acc [k v]] (assoc acc (concat vector-key k) v)) acc (expansion a-value v))
                 (every? not-map-but-coll? [a-value v]) (assoc acc vector-key (seq-diff a-value v))
                 (nil? a-value) (assoc acc vector-key {:+ v})
@@ -34,7 +35,7 @@
   [acc a b]
   (reduce (fn core
             [acc [k a-value]]
-            (let [vector-key (if (coll? k) k [k])
+            (let [vector-key [k]
                   b-value (get-in b vector-key)]
               (cond
                 (every? map? [b-value a-value]) (let [d (narrowing {} a-value b-value)]
