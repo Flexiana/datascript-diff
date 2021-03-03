@@ -88,8 +88,8 @@
 
 
 (deftest full-diff
-  (is (match? [{}] (map-diff {} {})))
-  (is (match? [{}] (map-diff {:a 1} {:a 1})))
+  (is (match? [] (map-diff {} {})))
+  (is (match? [] (map-diff {:a 1} {:a 1})))
   (is (match? [{:path     [:a]
                 :expected 2
                 :mismatch :-}] (map-diff {} {:a 2})))
