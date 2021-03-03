@@ -50,7 +50,7 @@
         (first after)
         (rest after)
         (conj acc (concat
-                    (butlast (reduce glue-left [actual] before))
+                    (butlast (reduce glue-left [actual] (reverse before)))
                     [actual]
                     (rest (reduce glue-right [actual] after))))))))
 
