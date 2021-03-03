@@ -177,8 +177,6 @@
   [text id]
   [:div
    {:id    id
-
-
     :style {:width        (if (= id "master")
                             :max-content
                             (copy-master-width!))

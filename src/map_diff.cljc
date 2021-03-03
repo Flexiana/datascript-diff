@@ -49,12 +49,14 @@
 (defn map-diff
   "Generates a git like diff from two maps."
   [a b]
+  {:pre [(every? map? [a b])]}
   (-> (expansion a b)
       (narrowing a b)))
 
 (defn map-commit
   "Applies a diff to a map"
   [a-map diff]
+  {:pre [(every? map? [a-map diff])]}
   (reduce (fn core
             [acc [ks v]]
             (cond
@@ -70,7 +72,7 @@
                         (every? not-map-but-coll? [ov v]) (assoc-in acc ks (seq-commit ov v))))))
     a-map diff))
 
-(defn map-revert-diff
+(defn- map-revert-diff
   [diff]
   (->> (map (fn [[ks v]]
               (let [pv (:+ v)
@@ -86,6 +88,8 @@
        (into {})))
 
 (defn map-revert
+  "Revert a diff on map"
   [b-map diff]
+  {:pre [(every? map? [b-map diff])]}
   (->> (map-revert-diff diff)
        (map-commit b-map)))

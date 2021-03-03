@@ -16,7 +16,7 @@
   [x]
   (and (not (map? x)) (coll? x)))
 
-(defn- get-indexes
+(defn- get-common-indexes
   [v e]
   (keep-indexed (fn [idx v] (when (= e v) idx)) (vec v)))
 
@@ -60,14 +60,16 @@
                   (if (empty? op)
                     []
                     (reduce longer op)))
-        ordered-part (->> (for [e y] (get-indexes x e))
+        ordered-part (->> (for [e y] (get-common-indexes x e))
                           (reduce concat)
                           ordered-parts
                           longest)]
     (map (vec x) ordered-part)))
 
 (defn seq-diff
+  "Create diff from two sequences"
   [a-seq b-seq]
+  {:pre [(every? not-map-but-coll? [a-seq b-seq])]}
   (loop [av (vec a-seq)
          bv (vec b-seq)
          common (common-ordered-part a-seq b-seq)
@@ -87,7 +89,7 @@
         (= 0 a-distance b-distance) (recur rav rvb (vec (rest common)) (conj acc (if fav nil :nil)))
         (= a-distance b-distance) (recur rav rvb common (conj acc (if (= fav fbv) fav {:- fav :+ fbv})))))))
 
-(defn extend-seq
+(defn- extend-seq
   [s d]
   (loop [s s
          d d
@@ -103,7 +105,9 @@
         :else (recur (rest s) (rest d) (conj acc fs))))))
 
 (defn seq-commit
+  "Commit a diff on sequence"
   [a-seq diff]
+  {:pre [(every? not-map-but-coll? [a-seq diff])]}
   (let [extended (extend-seq a-seq diff)
         merged (map (fn [a d] [a d]) extended diff)]
     (reduce (fn [acc [orig change]]
@@ -117,7 +121,7 @@
                   (every? nil? [pv mv]) (conj acc orig))))
       [] merged)))
 
-(defn seq-revert-diff
+(defn- seq-revert-diff
   [diff]
   (map (fn [v]
          (let [pv (:+ v)
@@ -132,6 +136,8 @@
        diff))
 
 (defn seq-revert
+  "Revert a diff on sequence"
   [b-seq diff]
+  {:pre [(every? not-map-but-coll? [b-seq diff])]}
   (->> (seq-revert-diff diff)
        (seq-commit b-seq)))
