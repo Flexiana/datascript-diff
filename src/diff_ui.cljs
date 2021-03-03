@@ -7,36 +7,34 @@
                               seq-revert
                               seq-commit]]
             [reagent.core :as r]
-
-            [clojure.string :as str]
             [clojure.edn :as edn]))
 
 (defonce state (r/atom {}))
 
-(defn not-map-but-coll?
+(defn- not-map-but-coll?
   [x]
   (and (not (map? x)) (coll? x)))
 
-(defn commit
+(defn- commit
   [a d]
   (if (map? a)
     (map-commit a d)
     (seq-commit a d)))
 
-(defn revert
+(defn- revert
   [a d]
   (if (map? a)
     (map-revert a d)
     (seq-revert a d)))
 
-(defn diff
+(defn- diff
   [a b]
   (cond
     (every? map? [a b]) (map-diff a b)
     (every? not-map-but-coll? [a b]) (seq-diff a b)
     :else nil))
 
-(defn- diffs
+(defn- process-inputs
   [{:keys [a-input b-input]}]
   (let [a (edn/read-string a-input)
         b (edn/read-string b-input)
@@ -54,7 +52,7 @@
          commit
          revert] (try
                    (swap! state dissoc :error)
-                   (diffs @state)
+                   (process-inputs @state)
                    (catch :default e
                      (swap! state assoc :error (.-message e))
                      []))]
@@ -90,9 +88,7 @@
 
 (defn td-border
   ([]
-   ^{:key (gensym)}
-   [:td {:style {:border-bottom :solid
-                 :border-width  :thin}}])
+   (td-border :white ""))
   ([color content]
    ^{:key (gensym)}
    [:td {:style {:border-bottom :solid
@@ -101,16 +97,14 @@
 
 (defn td
   ([]
-   ^{:key (gensym)}
-   [:td])
+   (td :white ""))
   ([content]
-   ^{:key (gensym)}
-   [:td content])
+   (td :white content))
   ([color content]
    ^{:key (gensym)}
    [:td {:style {:background color}} content]))
 
-(defn merge-map
+(defn- merge-map
   [a-map diff]
   (reduce (fn [acc [ks v]]
             (assoc-in acc (if (coll? ks) ks (vector ks)) v)) a-map diff))
@@ -123,48 +117,49 @@
                   merged (map (fn [a d] [a d]) extended diff)]
               (table
                 ^{:key (gensym)}
-                [:tr (td "(")
-                 (into (table-row)
-                       (for [[origin change] merged]
-                         (cond
-                           (every? nil? [origin change]) (td)
-                           (= :nil change) (td :lightgrey "nil")
-                           (:- change) (td :lightcoral (str (:- change)))
-                           (every? coll? [origin change]) (td (colorize-core origin change))
-                           origin (td :lightgrey (str origin))
-                           :else (td))))
-                 (into (table-row)
-                       (for [c s]
-                         (cond
-                           (= :nil (:+ c)) (td :lightgreen "nil")
-                           (:+ c) (td :lightgreen (str (:+ c)))
-                           :else (td))))
-                 (td ")")])))
+                (into [:tr]
+                      [(td "(")
+                       (into (table-row)
+                             (for [[origin change] merged]
+                               (cond
+                                 (every? nil? [origin change]) (td)
+                                 (= :nil change) (td :lightgrey "nil")
+                                 (:- change) (td :lightcoral (str (:- change)))
+                                 (every? coll? [origin change]) (colorize-core origin change)
+                                 origin (td :lightgrey (str origin))
+                                 :else (td))))
+                       (into (table-row)
+                             (for [c s]
+                               (cond
+                                 (= :nil (:+ c)) (td :lightgreen "nil")
+                                 (:+ c) (td :lightgreen (str (:+ c)))
+                                 :else (td))))
+                       (td ")")]))))
           (color-map2
             [a-map diff]
             (let [preprocessed (merge-map a-map diff)]
               (table
                 ^{:key (gensym)}
-                [:tr
-                 (td "{")
-                 (mapcat distinct
-                         (for [[k v] preprocessed]
-                           (let [pv (:+ v)
-                                 mv (:- v)
-                                 origin (get a-map k)]
-                             [(into (table-row)
-                                    (cond
-                                      (not (map? v)) [(td (str k)) (td (colorize-core origin v))]
-                                      (and pv mv) [(td :white (str k)) (td :lightcoral (str mv))]
-                                      mv [(td-border :lightcoral (str k)) (td-border :lightcoral (str mv))]
-                                      pv [(td) (td)]
-                                      (map? v) [(td-border :white (str k)) (colorize-core origin v)]))
-                              (into (table-row)
-                                    (cond
-                                      (and mv pv) [(td-border) (td-border :lightgreen (str pv))]
-                                      pv [(td-border :lightgreen (str k)) (td-border :lightgreen (str pv))]
-                                      :else [(td) (td)]))])))
-                 (td "}")])))]
+                (into [:tr]
+                      [(td "{")
+                       (mapcat distinct
+                               (for [[k v] preprocessed]
+                                 (let [pv (:+ v)
+                                       mv (:- v)
+                                       origin (get a-map k)]
+                                   [(into (table-row)
+                                          (cond
+                                            (not (map? v)) [(td (str k)) (colorize-core origin v)]
+                                            (and pv mv) [(td :white (str k)) (td :lightcoral (str mv))]
+                                            mv [(td-border :lightcoral (str k)) (td-border :lightcoral (str mv))]
+                                            pv [(td) (td)]
+                                            (map? v) [(td-border :white (str k)) (colorize-core origin v)]))
+                                    (into (table-row)
+                                          (cond
+                                            (and mv pv) [(td-border) (td-border :lightgreen (str pv))]
+                                            pv [(td-border :lightgreen (str k)) (td-border :lightgreen (str pv))]
+                                            :else [(td) (td)]))])))
+                       (td "}")]))))]
     (if
       (map? diff)
       (color-map2 a-value diff)
@@ -182,6 +177,8 @@
   [text id]
   [:div
    {:id    id
+
+
     :style {:width        (if (= id "master")
                             :max-content
                             (copy-master-width!))
