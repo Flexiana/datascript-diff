@@ -32,7 +32,7 @@
            want-map]}]
   (map-diff have-map want-map))
 
-(defn commit-diff->have! [*state {:keys [path expected actual mismatch]}]
+(defn commit-diff->have! [*state {:keys [path expected actual mismatch] :as data}]
   (case mismatch
     :diff (swap! *state update :have-map
                  assoc-in path expected)
@@ -40,6 +40,10 @@
                  assoc-in path actual)
     :-    (swap! *state update :have-map dissoc-in path))
   (swap! *state #(assoc %
+                        :txs
+                        (-> %
+                            :txs
+                            (conj (assoc data :id (random-uuid))))
                         :have-map-input
                         (-> %
                             :have-map
@@ -49,7 +53,29 @@
                             :want-map
                             str))))
 
-(defn map-diffs-ui [*state]
+(defn undo-commit! [*state txs id]
+  (let [{:keys [path expected actual mismatch]} (first (filter #(= id (% :id)) txs))]
+    (case mismatch
+      :diff (swap! *state update :have-map
+                   assoc-in path actual)
+      :+ (swap! *state update :have-map
+                dissoc-in path expected)
+      :- (swap! *state update :have-map
+                assoc-in path expected))
+    (swap! *state (fn [st]
+                    (assoc st
+                           :txs
+                           (->> st :txs (remove #(= id (% :id))))
+                           :have-map-input
+                           (-> st
+                               :have-map
+                               str)
+                           :want-map-input
+                           (-> st
+                               :want-map
+                               str))))))
+
+(defn map-diffs-ui [*state state]
   [:table  {:style {:margin          :auto
                     :border          "1px solid black"
                     :border-collapse "collapse"
@@ -58,9 +84,9 @@
             [:th {:style {:border "1px solid black"}}
              "Path"]
             [:th {:style {:border "1px solid black"}}
-             "Actual"]
-            [:th {:style {:border "1px solid black"}}
              "Expected"]
+            [:th {:style {:border "1px solid black"}}
+             "Actual"]
             [:th {:style {:border "1px solid black"}}
              "Mismatch"]]]
    [:tbody (map (fn [{:keys [path expected actual mismatch] :as d}]
@@ -79,14 +105,50 @@
                       (str actual)]
                      [:td {:style {:border "1px solid black"}}
                       (name mismatch)]
-                     [:td
-                      [:button {:on-click #(do (js/console.log [d *state])
-                                               (commit-diff->have! *state d)
-                                               (js/console.log [d *state]))}
-                       "Commit Diff"]]]))
-                (map-diffs-from-editor @*state))]])
+                     [:button {:on-click #(do (js/console.log [d *state])
+                                              (commit-diff->have! *state d)
+                                              (js/console.log [d *state]))}
+                      "Commit Diff"]]))
+                (map-diffs-from-editor state))]])
 
-(defonce *editor (r/atom {}))
+(defn txs-ui [*state {:keys [txs]}]
+  [:div
+   [:table {:style {:margin          :auto
+                    :border          "1px solid black"
+                    :border-collapse "collapse"
+                    :text-align      "center"}}
+    [:thead [:tr {:style {:border "1px solid black"}}
+             [:th {:style {:border "1px solid black"}}
+              "Id"]
+             [:th {:style {:border "1px solid black"}}
+              "Path"]
+             [:th {:style {:border "1px solid black"}}
+              "Expected"]
+             [:th {:style {:border "1px solid black"}}
+              "Actual"]
+             [:th {:style {:border "1px solid black"}}
+              "Mismatch"]]]
+    [:tbody (map (fn [{:keys [id path expected actual mismatch]}]
+                   [:tr {:key   (apply str [id path expected actual mismatch])
+                         :style {:border           "1px solid black"}}
+                    [:td {:style {:border "1px solid black"}}
+                     (str id)]
+                    [:td {:style {:border "1px solid black"}}
+                     (str path)]
+                    [:td {:style {:border "1px solid black"}}
+                     (str expected)]
+                    [:td {:style {:border "1px solid black"}}
+                     (str actual)]
+                    [:td {:style {:border "1px solid black"}}
+                     (name mismatch)]
+                    [:button {:on-click (partial undo-commit! *state txs id)}
+                     "Undo Commit"]])
+                 txs)]]])
+
+
+(defonce *editor (r/atom {:have-map-input ""
+                          :want-map-input ""
+                          :txs []}))
 
 (defn ui [*state]
   (let [{:keys [have-map-input
@@ -98,7 +160,8 @@
       [:thead [:tr
                [:th "Have Map"]
                [:th "Want Map"]
-               [:th "Diffs"]]]
+               [:th "Diffs"]
+               [:th "Commited"]]]
       [:tbody [:tr
                [:td [:label {:for "have-map"}
                      [:textarea {:style     {:font-size "18pt"}
@@ -121,4 +184,6 @@
                                                      :want-map (input->map input)))
                                  :value want-map-input}]]]
                [:td [:label {:for "diffs"}
-                     [map-diffs-ui *state]]]]]]]))
+                     [map-diffs-ui *state @*state]]]
+               [:td [:label {:for "txs"}
+                     [txs-ui *state @*state]]]]]]]))
