@@ -174,6 +174,6 @@
   (is (match? [[3 1]
                [3 2]
                [3 3]]
-              (paths-range-to-last-idx [3 1] [1 2 3 [3 4 5 6]])))
+              (paths-range-to-last-idx [3 1] (all-paths [1 2 3 [3 4 5 6]]))))
   (is (match? [2]
-              (paths-range-to-last-idx [2] [1 2 3 [3 4 5 6]]))))
+              (paths-range-to-last-idx [2] (all-paths [1 2 3 [3 4 5 6]])))))
