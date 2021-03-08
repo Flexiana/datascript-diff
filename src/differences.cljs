@@ -1,24 +1,8 @@
 (ns differences
   (:require
-   [diff :refer [all-paths map-diff]]
+   [diff :refer [all-paths map-diff dissoc-in remove-idxs remove-range-to-last-idx]]
    [reagent.core :as r]
-   [cljs.pprint :as pprint]
    [clojure.edn :as edn]))
-
-(defn dissoc-in
-  ([m ks]
-   (if-let [[k & ks] (seq ks)]
-     (if (seq ks)
-       (let [v (dissoc-in (get m k) ks)]
-         (if (empty? v)
-           (dissoc m k)
-           (assoc m k v)))
-       (dissoc m k))
-     m))
-  ([m ks & kss]
-   (if-let [[ks' & kss] (seq kss)]
-     (recur (dissoc-in m ks) ks' kss)
-     (dissoc-in m ks))))
 
 (defn input->map [input]
   (try
