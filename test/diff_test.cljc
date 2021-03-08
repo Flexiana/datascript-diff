@@ -1,5 +1,5 @@
 (ns diff-test
-  (:require [diff :refer [all-paths map-diff remove-idxs]]
+  (:require [diff :refer [all-paths map-diff remove-idxs paths-range-to-last-idx]]
             #?(:clj [clojure.test :refer [deftest is]]
                :cljs [cljs.test :refer [deftest is] :include-macros true])
             [matcher-combinators.test :refer [match?]]))
@@ -168,3 +168,12 @@
 
 (deftest remove-idxs-test
   (is (match? [2 [0 1]] (remove-idxs [2 [0 1 2]] [1 2]))))
+
+
+(deftest paths-range-to-last-idx-test
+  (is (match? [[3 1]
+               [3 2]
+               [3 3]]
+              (paths-range-to-last-idx [3 1] [1 2 3 [3 4 5 6]])))
+  (is (match? [2]
+              (paths-range-to-last-idx [2] [1 2 3 [3 4 5 6]]))))

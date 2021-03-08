@@ -64,15 +64,23 @@
 (defn all-paths [table]
   (all-paths-aux table []))
 
-(defn remove-range-to-last-idx [want-path have-map-st]
+(defn paths-range-to-last-idx [want-path have-map-st]
   (let [paths (set (all-paths have-map-st))]
-    (prn paths)
-    (when-not (contains? paths want-path)
-      (let [path-max-idx (last want-path)
-            gt-idx       (apply max (map last (filter #(= (count %) (apply max (map count paths))) paths)))]
-        (if-not (= gt-idx path-max-idx)
-          (map #(conj (pop want-path) %) (range 1 (inc gt-idx)))
+    (when (contains? paths want-path)
+      (let [path-max-idx  (last want-path)
+            gt-idx        (->> paths
+                               (filter #(= (count %)
+                                           (->> paths
+                                                (map count)
+                                                (apply max))))
+                               (map last)
+                               (apply max))
+            is-last-path? (= gt-idx path-max-idx)]
+        (if (and (>= (count want-path) 2)
+                 (not is-last-path?))
+          (map #(conj (pop want-path) %) (range path-max-idx (inc gt-idx)))
           want-path)))))
+
 (defn map-diff [have want]
   (let [idx-have        (set (all-paths have))
         idx-want        (set (all-paths want))
