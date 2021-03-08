@@ -1,5 +1,5 @@
 (ns diff-test
-  (:require [diff :refer [all-paths map-diff]]
+  (:require [diff :refer [all-paths map-diff remove-idxs]]
             #?(:clj [clojure.test :refer [deftest is]]
                :cljs [cljs.test :refer [deftest is] :include-macros true])
             [matcher-combinators.test :refer [match?]]))
@@ -165,3 +165,6 @@
               (map-diff {:a "apple"
                          :b [1 2 3 4 5 6]} {:b [4 5 6]
                                             :a [123]}))))
+
+(deftest remove-idxs-test
+  (is (match? [2 [0 1]] (remove-idxs [2 [0 1 2]] [1 2]))))
