@@ -16,48 +16,53 @@
            want-map]}]
   (map-diff have-map want-map))
 
-(defn commit-diff->have! [*state {:keys [path expected actual mismatch] :as data}]
+(defn commit-diff->have [{:keys [path expected actual mismatch] :as data} have-map-st]
   (case mismatch
-    :diff (swap! *state update :have-map
-                 assoc-in path expected)
-    :+    (swap! *state update :have-map
-                 assoc-in path actual)
-    :-    (swap! *state update :have-map dissoc-in path))
-  (swap! *state #(assoc %
-                        :txs
-                        (-> %
-                            :txs
-                            (conj (assoc data :id (random-uuid))))
-                        :have-map-input
-                        (-> %
-                            :have-map
-                            str)
-                        :want-map-input
-                        (-> %
-                            :want-map
-                            str))))
+    :diff (assoc-in have-map-st path expected)
+    :+ (assoc-in have-map-st path actual)
+    :- (if (vector? have-map-st)
+         (remove-range-to-last-idx path have-map-st)
+         (dissoc-in have-map-st path))))
 
-(defn undo-commit! [*state txs id]
+(defn commit-diff->have! [*state data]
+  (swap! *state
+         (fn [st]
+           (let [updated-st (update st :have-map (partial commit-diff->have data))]
+             (assoc updated-st
+                    :txs
+                    (-> updated-st
+                        :txs
+                        (conj (assoc data :id (random-uuid))))
+                    :have-map-input
+                    (-> updated-st
+                        :have-map
+                        str)
+                    :want-map-input
+                    (-> updated-st
+                        :want-map
+                        str))))))
+
+(defn undo-have-map-commit [txs id have-map-st]
   (let [{:keys [path expected actual mismatch]} (first (filter #(= id (% :id)) txs))]
     (case mismatch
-      :diff (swap! *state update :have-map
-                   assoc-in path actual)
-      :+ (swap! *state update :have-map
-                dissoc-in path expected)
-      :- (swap! *state update :have-map
-                assoc-in path expected))
-    (swap! *state (fn [st]
-                    (assoc st
-                           :txs
-                           (->> st :txs (remove #(= id (% :id))))
-                           :have-map-input
-                           (-> st
-                               :have-map
-                               str)
-                           :want-map-input
-                           (-> st
-                               :want-map
-                               str))))))
+      :diff (assoc-in have-map-st path actual)
+      :+    (dissoc-in have-map-st path expected)
+      :-    (assoc-in have-map-st path expected))))
+
+(defn undo-commit! [*state txs id]
+  (swap! *state
+         (fn [st]
+           (let [updated-st  (update st :have-map (partial undo-have-map-commit txs id))]
+             (assoc updated-st :txs
+                    (->> updated-st :txs (remove #(= id (% :id))))
+                    :have-map-input
+                    (-> updated-st
+                        :have-map
+                        str)
+                    :want-map-input
+                    (-> updated-st
+                        :want-map
+                        str))))))
 
 (defn map-diffs-ui [*state state]
   [:table  {:style {:margin          :auto
