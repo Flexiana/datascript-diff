@@ -152,27 +152,25 @@
                [:th "Diffs"]
                [:th "Commited"]]]
       [:tbody [:tr
-               [:td [:label {:for "have-map"}
-                     [:textarea {:style     {:font-size "18pt"}
-                                 :type      :textarea
-                                 :rows      25
-                                 :columns   80
-                                 :on-change #(let [input (.. % -target -value)]
-                                               (swap! *state assoc
-                                                      :have-map-input input
-                                                      :have-map (input->map input)))
-                                 :value     have-map-input}]]]
-               [:td [:label {:for "want-map"}
-                     [:textarea {:style     {:font-size "18pt"}
-                                 :type      :textarea
-                                 :rows      25
-                                 :columns   80
-                                 :on-change #(let [input (.. % -target -value)]
-                                               (swap! *state assoc
-                                                      :want-map-input input
-                                                      :want-map (input->map input)))
-                                 :value     want-map-input}]]]
-               [:td [:label {:for "diffs"}
-                     [map-diffs-ui *state @*state]]]
-               [:td [:label {:for "txs"}
-                     [txs-ui *state @*state]]]]]]]))
+               [:td [:textarea {:style     {:font-size "18pt"}
+                                :type      :textarea
+                                :rows      25
+                                :columns   80
+                                :on-change #(let [input (.. % -target -value)]
+                                              (swap! *state assoc
+                                                     :have-map-input input
+                                                     :have-map (input->map input)))
+                                :value     have-map-input}]]
+               [:td [:textarea {:style     {:font-size "18pt"}
+                                :type      :textarea
+                                :rows      25
+                                :columns   80
+                                :on-change #(let [input (.. % -target -value)]
+                                              (swap! *state assoc
+                                                     :want-map-input input
+                                                     :want-map (input->map input)))
+                                :value     want-map-input}]]
+               [:td {:style {:vertical-align "top"}}
+                [map-diffs-ui *state @*state]]
+               [:td {:style {:vertical-align "top"}}
+                [txs-ui *state @*state]]]]]]))
