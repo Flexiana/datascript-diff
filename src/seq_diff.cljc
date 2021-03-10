@@ -84,9 +84,8 @@
         (every? empty? [av bv]) acc
         (< a-distance b-distance) (recur av rvb common (conj acc {:+ (or fbv :nil)}))
         (> a-distance b-distance) (recur rav bv common (conj acc {:- (or fav :nil)}))
-        (and (= a-distance b-distance) (every? map? [fav fbv]) (= fav fbv)) (recur rav rvb common (conj acc nil))
+        (and (= a-distance b-distance) (= fav fbv)) (recur rav rvb common (conj acc (if fav nil :nil)))
         (and (= a-distance b-distance) (every? map? [fav fbv])) (recur rav rvb common (conj acc (map-diff fav fbv)))
-        (and (= a-distance b-distance) (every? not-map-but-coll? [fav fbv]) (= fav fbv)) (recur rav rvb common (conj acc nil))
         (and (= a-distance b-distance) (every? not-map-but-coll? [fav fbv])) (recur rav rvb common (conj acc (seq-diff fav fbv)))
         (= 0 a-distance b-distance) (recur rav rvb (vec (rest common)) (conj acc (if fav nil :nil)))
         (= a-distance b-distance) (recur rav rvb common (conj acc (if (= fav fbv) fav {:- fav :+ fbv})))))))
