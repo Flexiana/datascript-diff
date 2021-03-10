@@ -53,6 +53,7 @@
 (defn gen-uuid []
   #?(:clj (java.util.UUID/randomUUID)
      :cljs (random-uuid)))
+
 (defn remove-idx
   ([i]
    (keep-indexed
