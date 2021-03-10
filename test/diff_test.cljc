@@ -182,20 +182,20 @@
               (paths-range-to-last-idx [2] (all-paths [1 2 3 [3 4 5 6]])))))
 
 (deftest commit-diff-test
-  #_(is (match? {:have-map {:a 1}}
-                (dissoc (commit-diff {:have-map nil
-                                      :want-map {:a 1}}
-                                     (:diffs (map-diff nil {:a 1}))
-                                     {:path     [:a]
-                                      :expected 1
-                                      :mismatch :+})
-                        :txs)))
+  (is (match? {:have-map {:a 1}}
+              (dissoc (commit-diff {:have-map nil
+                                    :want-map {:a 1}}
+                                   (:diffs (map-diff nil {:a 1}))
+                                   {:path     [:a]
+                                    :expected 1
+                                    :mismatch :+})
+                      :txs)))
   (is (match? {:have-map {:a 2}}
               (dissoc (commit-diff {:have-map {:a 1}
                                     :want-map {:a 2}}
                                    [{:path [:a], :actual 1, :expected 2, :mismatch :diff}]
                                    {:path     [:a]
-                                    :actual 1
+                                    :actual   1
                                     :expected 2
                                     :mismatch :+})
                       :txs)))
@@ -230,8 +230,9 @@
                                                      (:diffs (map-diff [1 2 3 4 5] [1 2]))
                                                      {:path     [2]
                                                       :actual   3
-                                                      :mismatch :-}) :txs)))
-  (is (match? {:have-map {:a [1]}}
+                                                      :mismatch :-})
+                                        :txs)))
+  (is (match? {:have-map {:a {0 1}}}
               (dissoc (commit-diff
                        {:have-map {:a 1},
                         :want-map {:a [1 2]}}
@@ -240,47 +241,31 @@
                         {:path [:a], :actual 1, :mismatch :-}]
                        {:path [:a 0], :expected 1, :mismatch :+})
                       :txs)))
-  )
-
-#_(deftest uncommit-diff-test
-    (is (match? {:have-map {:a 1}}
-                (dissoc (commit-diff {:have-map nil
-                                      :want-map {:a 1}}
-                                     (:diffs (map-diff nil {:a 1}))
-                                     {:path     [:a]
-                                      :expected 1
-                                      :mismatch :+})
-                        :committed-diffs)))
-    (is (match? {:have-map [1]}
-                (dissoc (commit-diff {:have-map nil
-                                      :want-map [1 2 4]}
-                                     (:diffs (map-diff nil [1 2 4]))
-                                     {:path     [0]
-                                      :expected 1
-                                      :mismatch :+})
-                        :committed-diffs)))
-    (is (match? {:have-map [1 2]}
-                (dissoc (commit-diff {:have-map nil
-                                      :want-map [1 2 4]}
-                                     (:diffs (map-diff nil [1 2 4]))
-                                     {:path     [1]
-                                      :actual   nil
-                                      :expected 2
-                                      :mismatch :+})
-                        :committed-diffs)))
-    (is (match? {:have-map [3]}
-                (dissoc (commit-diff {:have-map [4]
-                                      :want-map [3]}
-                                     (:diffs (map-diff nil [3]))
-                                     {:path     [0]
-                                      :actual   4
-                                      :expected 3
-                                      :mismatch :diff})
-                        :committed-diffs)))
-    (is (match? {:have-map [1 2]} (dissoc (commit-diff {:have-map [1 2 3 4 5]
-                                                        :want-map [1 2]}
-                                                       (:diffs (map-diff [1 2 3 4 5] [1 2]))
-                                                       {:path     [2]
-                                                        :actual   3
-                                                        :mismatch :-})
-                                          :committed-diffs))))
+  (is (match? {:have-map [1 2]}
+              (dissoc (commit-diff {:have-map [1 2 3 4 5],
+                                    :want-map [1 2]}
+                                   [{:path [2], :actual 3, :mismatch :-}
+                                    {:path [3], :actual 4, :mismatch :-}
+                                    {:path [4], :actual 5, :mismatch :-}]
+                                   {:path [2], :actual 3, :mismatch :-})
+                      :txs)))
+  (is (match? {:have-map {:a 1}}
+              (commit-diff {:have-map {:a {:b 2}},
+                            :want-map {:a 1}}
+                           (:diffs (map-diff {:a {:b 2}} {:a 1}))
+                           {:path [:a], :expected 1, :mismatch :+})))
+  (is (match? {:have-map {:a {0 1 1 2}}}
+              (commit-diff {:have-map {:a 1},
+                            :want-map {:a [1 2]}}
+                           (:diffs (map-diff {:a 1} {:a [1 2]}))
+                           {:path [:a 1], :expected 1, :mismatch :+})))
+  (is (match? {:have-map [{:a 1}]}
+              (commit-diff {:have-map [{:a 1} {:a 1}]
+                            :want-map [{:a 1}]}
+                           (:diffs (map-diff [{:a 1} {:a 1}] [{:a 1}]))
+                           {:path [1 :a], :actual 1, :mismatch :-})))
+  (is (match? {:have-map [[false] [true]]}
+              (commit-diff {:have-map [[true] [false] [true] [true]]
+                            :want-map []}
+                           (:diffs (map-diff [[true] [false] [true] [true]] []))
+                           {:path [0 0], :actual true, :mismatch :-}))))
