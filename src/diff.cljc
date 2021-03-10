@@ -102,7 +102,9 @@
      (if (seq ks)
        (let [v (dissoc-in (get m k) ks)]
          (if (empty? v)
-           (dissoc m k)
+           (if-not (number? k)
+             (dissoc m k)
+             (remove-idx k m))
            (assoc m k v)))
        (cond (map? m)  (dissoc m k)
              (coll? m) (remove-idx k m)))
@@ -112,15 +114,16 @@
      (recur (dissoc-in m ks) ks' kss)
      (dissoc-in m ks))))
 
-(defn diffrange+ [path diffs]
+(defn diffrange+ [path diff diffs]
   (if (number? (last path))
-    (filter #(and (number?  (-> %
-                                :path
-                                last))
-                  (>= (last path) (-> %
-                                      :path
-                                      last))) diffs)
-    diffs))
+    (->> diffs
+         (filter #(and (number?  (-> %
+                                     :path
+                                     last))
+                       (>= (last path) (-> %
+                                           :path
+                                           last)))))
+    [diff]))
 
 
 (defn commit+ [{:keys [have-map want-map] :as st}
@@ -138,29 +141,54 @@
                                 vals
                                 (apply vector))
     :else                  (reduce (fn [acc {:keys [expected path]}]
-                                     (assoc-in acc path expected)) have-map diffs)))
 
-(defn diffrange- [path diffs]
+                                     #?(:clj (try (assoc-in acc path expected)
+                                                  (catch ClassCastException e
+                                                    (assoc-in
+                                                     (dissoc acc (first path))
+                                                     path expected)))
+                                        :cljs (try (assoc-in acc path expected)
+                                                   (catch :default e
+                                                     (assoc-in
+                                                      (dissoc acc (first path))
+                                                      path
+                                                      expected))))) have-map diffs)))
+
+(defn diffrange- [path diff diffs]
   (if (number? (last path))
-    (filter #(<= (last path) (-> % :path last)) diffs)
-    diffs))
+    (->> diffs
+         (filter #(and (number?  (-> %
+                                     :path
+                                     last))
+                       (<= (last path) (-> %
+                                           :path
+                                           last))))
+         (sort-by #(-> %
+                       :path
+                       last) >))
+    [diff]))
 
-(defn commit- [{:keys [have-map want-map] :as st}  diffs]
-  (reduce (fn [acc {:keys [path]}]
-            (dissoc-in acc path)) have-map diffs))
+(defn commit- [{:keys [have-map want-map] :as st} diffs]
+  (cond
+    :else (reduce (fn [acc {:keys [path]}]
+                    (dissoc-in acc path)) have-map diffs)))
+
 
 (defn commit-diff [{:keys [have-map want-map] :as st}
                    diffs
                    {:keys [path expected actual mismatch] :as diff}]
   (case mismatch
-    :+    (let [diffs+ (diffrange+ path diffs)]
+    :+    (let [diffs+ (diffrange+ path diff diffs)]
             (-> st
                 (assoc :have-map (commit+ st diffs+))
                 (update :txs concat (map #(assoc % :id (gen-uuid)) diffs+))))
-    :-    (let [diffs- (diffrange- path diffs)]
+    :-    (let [diffs- (diffrange- path diff diffs)]
             (-> st
                 (assoc :have-map (commit- st diffs-))
-                (update :txs concat (map #(assoc % :id (gen-uuid)) diffs-))))
+                (update
+                 :txs
+                 concat
+                 (map #(assoc % :id (gen-uuid)) diffs-))))
     :diff (-> st
               (update :have-map #(assoc-in % path expected))
               (update :txs concat (map #(assoc % :id (gen-uuid)) diffs)))))
