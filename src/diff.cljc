@@ -146,12 +146,13 @@
                                      #?(:clj (try (assoc-in acc path expected)
                                                   (catch ClassCastException e
                                                     (assoc-in
-                                                     (dissoc acc (first path))
-                                                     path expected)))
+                                                     (dissoc-in acc [(first path)])
+                                                     path
+                                                     expected)))
                                         :cljs (try (assoc-in acc path expected)
                                                    (catch :default e
                                                      (assoc-in
-                                                      (dissoc acc (first path))
+                                                      (dissoc-in acc [(first path)])
                                                       path
                                                       expected))))) have-map diffs)))
 

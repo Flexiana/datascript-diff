@@ -268,4 +268,18 @@
               (commit-diff {:have-map [[true] [false] [true] [true]]
                             :want-map []}
                            (:diffs (map-diff [[true] [false] [true] [true]] []))
-                           {:path [0 0], :actual true, :mismatch :-}))))
+                           {:path [0 0], :actual true, :mismatch :-})))
+  (is (match? {:have-map [{:a 1}
+                          {:a {:b {0 {:c 3}}}}]}
+              (commit-diff {:have-map [{:a 1}
+                                       {:a 1}]
+                            :want-map [{:a 2}
+                                       {:a {:b [{:c 3}
+                                                [:d 4]]}}]}
+                           (:diffs (map-diff
+                                    [{:a 2}
+                                     {:a {:b [{:c 3}
+                                              [:d 4]]}}]
+                                    [{:a 1}
+                                     {:a 1}]))
+                           {:path [1 :a :b 0 :c] :expected 3 :mismatch :+}))))
