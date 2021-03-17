@@ -147,7 +147,8 @@
                                 :on-change #(let [input (.. % -target -value)]
                                               (swap! *state assoc
                                                      :want-map-input input
-                                                     :want-map (input->map input)))
+                                                     :want-map (input->map input)
+                                                     :txs []))
                                 :value     want-map-input}]]
                [:td {:style {:vertical-align "top"}}
                 [map-diffs-ui *state @*state]]
