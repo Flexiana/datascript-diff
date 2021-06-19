@@ -234,7 +234,7 @@
                                         :txs)))
   (is (match? {:have-map {:a {0 1}}}
               (dissoc (commit-diff
-                       {:have-map {:a 1},
+                       {:have-map {:a 1}
                         :want-map {:a [1 2]}}
                        [{:path [:a 0], :expected 1, :mismatch :+}
                         {:path [:a 1], :expected 2, :mismatch :+}
@@ -242,7 +242,7 @@
                        {:path [:a 0], :expected 1, :mismatch :+})
                       :txs)))
   (is (match? {:have-map [1 2]}
-              (dissoc (commit-diff {:have-map [1 2 3 4 5],
+              (dissoc (commit-diff {:have-map [1 2 3 4 5]
                                     :want-map [1 2]}
                                    [{:path [2], :actual 3, :mismatch :-}
                                     {:path [3], :actual 4, :mismatch :-}
@@ -250,12 +250,12 @@
                                    {:path [2], :actual 3, :mismatch :-})
                       :txs)))
   (is (match? {:have-map {:a 1}}
-              (commit-diff {:have-map {:a {:b 2}},
+              (commit-diff {:have-map {:a {:b 2}}
                             :want-map {:a 1}}
                            (:diffs (map-diff {:a {:b 2}} {:a 1}))
                            {:path [:a], :expected 1, :mismatch :+})))
   (is (match? {:have-map {:a {0 1 1 2}}}
-              (commit-diff {:have-map {:a 1},
+              (commit-diff {:have-map {:a 1}
                             :want-map {:a [1 2]}}
                            (:diffs (map-diff {:a 1} {:a [1 2]}))
                            {:path [:a 1], :expected 1, :mismatch :+})))

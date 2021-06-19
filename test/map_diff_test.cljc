@@ -1,15 +1,15 @@
 (ns map-diff-test
   (:require
-    [clojure.test :refer :all]
-    [seq-diff :refer [seq-diff
-                      common-ordered-part
-                      seq-revert
-                      seq-commit]]
-    [map-diff :refer [map-commit
-                      map-revert
-                      map-diff
-                      narrowing
-                      expansion]]))
+   [clojure.test :refer [deftest is format]]
+   [seq-diff :refer [seq-diff
+                     common-ordered-part
+                     seq-revert
+                     seq-commit]]
+   [map-diff :refer [map-commit
+                     map-revert
+                     map-diff
+                     narrowing
+                     expansion]]))
 
 (deftest step-one
   (is (= {} (expansion {} {})))
@@ -149,3 +149,35 @@
          (:- (map-diff {:a 2} {:a 3}))))
   (is (= (first (:+ (seq-diff [{:a 2} 2] [{:a 3} 2])))
          (:+ (map-diff {:a 2} {:a 3})))))
+
+(defn roam-research->clj [s]
+  #?(:cljs (js->clj (.parse js/JSON s) :keywordize-keys true)))
+
+(deftest testing-roam-research-data
+  (let [data-a (roam-research->clj "{
+  \":block/parents\": [{ \":db/id\": 3 }],
+  \":block/string\": \"7GUIs\",
+  \":create/time\": 1609151779781,
+  \":create/user\": { \":db/id\": 1 },
+  \":block/order\": 0,
+  \":block/open\": true,
+  \":edit/time\": 1609151785742,
+  \":block/uid\": \"OtQdkIAKn\",
+  \":db/id\": 4,
+  \":block/page\": { \":db/id\": 3 },
+  \":edit/user\": { \":db/id\": 1 }}")
+        data-b (roam-research->clj "{
+  \":block/parents\": [{ \":db/id\": 3 }],
+  \":block/string\": \"[[Flexiana Framework]]\",
+  \":block/refs\": [{ \":db/id\": 6 }],
+  \":create/time\": 1609151785735,
+  \":create/user\": { \":db/id\": 1 },
+  \":block/order\": 1,
+  \":block/open\": true,
+  \":edit/time\": 1609188039048,
+  \":block/uid\": \"Rm0BLZjrR\",
+  \":edit/seen-by\": [{ \":db/id\": 41 }],
+  \":db/id\": 5,
+  \":block/page\": { \":db/id\": 3 },
+  \":edit/user\": { \":db/id\": 1 }}")]
+    (map-full-test data-a data-b)))
