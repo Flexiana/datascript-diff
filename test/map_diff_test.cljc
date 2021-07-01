@@ -1,6 +1,10 @@
 (ns map-diff-test
   (:require
-   [clojure.test :refer [deftest is format]]
+   #?(:cljs [goog.string :as s])
+   #?(:cljs [goog.string.format])
+   #?(:cljs [cljs.test :refer [deftest is]]
+      :clj [clojure.test :refer [deftest is format]])
+   [roam-research :as rr]
    [seq-diff :refer [seq-diff
                      common-ordered-part
                      seq-revert
@@ -73,13 +77,17 @@
 (defn map-full-test
   [a b]
   (is (= b (->> (map-diff a b)
-                (map-commit a))) (format "commit %s -> %s" a b))
+                (map-commit a))) #?(:cljs (s/format "commit %s -> %s" a b)
+                                    :clj (format "commit %s -> %s" a b)))
   (is (= a (->> (map-diff b a)
-                (map-commit b))) (format "commit %s -> %s" b a))
+                (map-commit b))) #?(:cljs (s/format "commit %s -> %s" b a)
+                                    :clj (format "commit %s -> %s" b a)))
   (is (= a (->> (map-diff a b)
-                (map-revert b))) (format "revert %s -> %s" b a))
+                (map-revert b))) #?(:cljs (s/format "revert %s -> %s" b a)
+                                    :clj (format "revert %s -> %s" b a)))
   (is (= b (->> (map-diff b a)
-                (map-revert a))) (format "revert %s -> %s" a b)))
+                (map-revert a))) #?(:cljs (s/format "revert %s -> %s" a b)
+                                    :clj (format "revert %s -> %s" a b))))
 
 (deftest map-diff-commit-test
   (map-full-test {} {})
@@ -108,13 +116,13 @@
 (defn seq-diff-commit-revert-test
   [a b]
   (is (= b (->> (seq-diff a b)
-                (seq-commit a))) (format "commit %s -> %s" a b))
+                (seq-commit a))) #?(:clj (format "commit %s -> %s" a b)))
   (is (= a (->> (seq-diff b a)
-                (seq-commit b))) (format "commit %s -> %s" b a))
+                (seq-commit b))) #?(:clj (format "commit %s -> %s" b a)))
   (is (= a (->> (seq-diff a b)
-                (seq-revert b))) (format "revert %s -> %s" b a))
+                (seq-revert b))) #?(:clj (format "revert %s -> %s" b a)))
   (is (= b (->> (seq-diff b a)
-                (seq-revert a))) (format "revert %s -> %s" a b)))
+                (seq-revert a))) #?(:clj (format "revert %s -> %s" a b))))
 
 (deftest seq-test
   (is (= [:b] (common-ordered-part [:a :b :c] [:c :b :d])))
@@ -150,11 +158,8 @@
   (is (= (first (:+ (seq-diff [{:a 2} 2] [{:a 3} 2])))
          (:+ (map-diff {:a 2} {:a 3})))))
 
-(defn roam-research->clj [s]
-  #?(:cljs (js->clj (.parse js/JSON s) :keywordize-keys true)))
-
 (deftest testing-roam-research-data
-  (let [data-a (roam-research->clj "{
+  (let [data-a (rr/->clj "{
   \":block/parents\": [{ \":db/id\": 3 }],
   \":block/string\": \"7GUIs\",
   \":create/time\": 1609151779781,
@@ -166,7 +171,7 @@
   \":db/id\": 4,
   \":block/page\": { \":db/id\": 3 },
   \":edit/user\": { \":db/id\": 1 }}")
-        data-b (roam-research->clj "{
+        data-b (rr/->clj "{
   \":block/parents\": [{ \":db/id\": 3 }],
   \":block/string\": \"[[Flexiana Framework]]\",
   \":block/refs\": [{ \":db/id\": 6 }],

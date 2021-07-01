@@ -9,5 +9,5 @@
                   :modules    {:main {:init-fn ui/run}}}
           :test {:target    :node-test
                  :output-to "out/node-tests.js"
-                 :ns-regexp "-spec$"
+                 :ns-regexp "-test$"
                  :autorun   true}}}
