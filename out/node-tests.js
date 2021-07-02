@@ -1715,6 +1715,7 @@ SHADOW_IMPORT("roam_research.js");
 SHADOW_IMPORT("seq_diff.js");
 SHADOW_IMPORT("map_diff.js");
 SHADOW_IMPORT("map_diff_test.js");
+SHADOW_IMPORT("roam_research_test.js");
 SHADOW_IMPORT("shadow.test.js");
 SHADOW_IMPORT("shadow.test.node.js");
 SHADOW_IMPORT("shadow.module.main.append.js");

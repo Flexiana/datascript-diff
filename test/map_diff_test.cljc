@@ -2,9 +2,9 @@
   (:require
    #?(:cljs [goog.string :as s])
    #?(:cljs [goog.string.format])
+   #?(:cljs [roam-research :as rr])
    #?(:cljs [cljs.test :refer [deftest is]]
       :clj [clojure.test :refer [deftest is format]])
-   [roam-research :as rr]
    [seq-diff :refer [seq-diff
                      common-ordered-part
                      seq-revert
@@ -48,8 +48,6 @@
   (is (= {[:a] {:- {:a 1}}} (narrowing {} {:a {:a 1}} {})))
   (is (= {'(:a :a) {:- 2, :+ 1}, '(:a :b) {:- 2}} (narrowing {'(:a :a) {:- 2, :+ 1}} {:a {:a 2 :b 2}} {:a {:a 1}})))
   (is (= {[:a] {:- {:a {:b 5}}, :+ 2}} (step-2 {:a {:a {:b 5}}} {:a 2}))))
-
-(expansion {:a {:a 2 :b 2}} {:a {:a 1}})
 
 (deftest full-diff
   (is (= {} (map-diff {} {})))
@@ -111,7 +109,8 @@
                  {:z [1 "a" "b" 1 3 1 1 2 18 {:a "c"} 19 4 5 6 7 8 9 10 11 12]
                   :x {:a "d" :b [2 1 3]}
                   :a "c"
-                  :b "apple"}))
+                  :b "apple"})
+  (map-full-test {":a" 1} {":a" 3}))
 
 (defn seq-diff-commit-revert-test
   [a b]
@@ -158,8 +157,20 @@
   (is (= (first (:+ (seq-diff [{:a 2} 2] [{:a 3} 2])))
          (:+ (map-diff {:a 2} {:a 3})))))
 
-(deftest testing-roam-research-data
-  (let [data-a (rr/->clj "{
+(deftest partial-roam-research-data
+  (is (= {[":block/parents"] {:+ [{":db/id" 3}]}}
+         (expansion {} (rr/->clj "{\":block/parents\": [{ \":db/id\": 3 }]}"))))
+  (is (= {[":block/uid"] {:+ "OtQdkIAKn"}
+          [":block/page"] {:+ {":db/id" 3}}
+          [":edit/user"] {:+ {":db/id" 1}}
+          [":db/id"] {:+ 4}}
+         (expansion {} (rr/->clj "{\":block/uid\": \"OtQdkIAKn\",
+                                   \":block/page\": { \":db/id\": 3 },
+                                   \":edit/user\": { \":db/id\": 1 },
+                                   \":db/id\": 4}")))))
+
+#_(deftest full-roam-research-data
+    (let [data-a (rr/->clj "{
   \":block/parents\": [{ \":db/id\": 3 }],
   \":block/string\": \"7GUIs\",
   \":create/time\": 1609151779781,
@@ -171,7 +182,7 @@
   \":db/id\": 4,
   \":block/page\": { \":db/id\": 3 },
   \":edit/user\": { \":db/id\": 1 }}")
-        data-b (rr/->clj "{
+          data-b (rr/->clj "{
   \":block/parents\": [{ \":db/id\": 3 }],
   \":block/string\": \"[[Flexiana Framework]]\",
   \":block/refs\": [{ \":db/id\": 6 }],
@@ -185,4 +196,4 @@
   \":db/id\": 5,
   \":block/page\": { \":db/id\": 3 },
   \":edit/user\": { \":db/id\": 1 }}")]
-    (map-full-test data-a data-b)))
+      (map-full-test data-a data-b)))
