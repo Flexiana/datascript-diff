@@ -158,19 +158,22 @@
          (:+ (map-diff {:a 2} {:a 3})))))
 
 (deftest partial-roam-research-data
-  (is (= {[":block/parents"] {:+ [{":db/id" 3}]}}
-         (expansion {} (rr/->clj "{\":block/parents\": [{ \":db/id\": 3 }]}"))))
-  (is (= {[":block/uid"] {:+ "OtQdkIAKn"}
-          [":block/page"] {:+ {":db/id" 3}}
-          [":edit/user"] {:+ {":db/id" 1}}
-          [":db/id"] {:+ 4}}
-         (expansion {} (rr/->clj "{\":block/uid\": \"OtQdkIAKn\",
-                                   \":block/page\": { \":db/id\": 3 },
-                                   \":edit/user\": { \":db/id\": 1 },
-                                   \":db/id\": 4}")))))
+  (let [data-a (rr/->clj "{\":block/parents\": [{ \":db/id\": 3 }]}")
+        data-b (rr/->clj "{\":block/uid\": \"OtQdkIAKn\",
+                           \":block/page\": { \":db/id\": 3 },
+                           \":edit/user\": { \":db/id\": 1 },
+                           \":db/id\": 4}")]
+    (is (= {[":block/parents"] {:+ [{":db/id" 3}]}}
+           (expansion {} data-a)))
+    (is (= {[":block/uid"] {:+ "OtQdkIAKn"}
+            [":block/page"] {:+ {":db/id" 3}}
+            [":edit/user"] {:+ {":db/id" 1}}
+            [":db/id"] {:+ 4}}
+           (expansion {} data-b)))
+    (map-full-test data-a data-b)))
 
-#_(deftest full-roam-research-data
-    (let [data-a (rr/->clj "{
+(deftest full-roam-research-data
+  (let [data-a (rr/->clj "{
   \":block/parents\": [{ \":db/id\": 3 }],
   \":block/string\": \"7GUIs\",
   \":create/time\": 1609151779781,
@@ -182,7 +185,7 @@
   \":db/id\": 4,
   \":block/page\": { \":db/id\": 3 },
   \":edit/user\": { \":db/id\": 1 }}")
-          data-b (rr/->clj "{
+        data-b (rr/->clj "{
   \":block/parents\": [{ \":db/id\": 3 }],
   \":block/string\": \"[[Flexiana Framework]]\",
   \":block/refs\": [{ \":db/id\": 6 }],
@@ -196,4 +199,4 @@
   \":db/id\": 5,
   \":block/page\": { \":db/id\": 3 },
   \":edit/user\": { \":db/id\": 1 }}")]
-      (map-full-test data-a data-b)))
+    (map-full-test data-a data-b)))
