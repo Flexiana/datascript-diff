@@ -5,7 +5,7 @@ This project is a test task to implements a diff algorithm, it works with some *
 - Vectors, e.g. `[1 2 3 4]`.
 - Maps, e.g. `{:key "value"}`.
 
-The project was developed to be used mainly with ClojureScript, but some namespaces ware wrote with `cljc` extension for [portable files in multiple Clojure platforms](https://clojure.org/reference/reader#_reader_conditionals)
+The project was developed to be used mainly with ClojureScript, but some namespaces were wrote with `cljc` extension for [portable files in multiple Clojure platforms](https://clojure.org/reference/reader#_reader_conditionals)
 
 ## Contents
 
