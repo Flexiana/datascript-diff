@@ -3,6 +3,7 @@
 .nrepl-port
 .idea
 target/
+out/
 /pom*
 .clj-kondo/cache/
 .shadow-cljs/
