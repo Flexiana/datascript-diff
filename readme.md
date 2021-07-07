@@ -61,6 +61,6 @@ Also you can add a new test within test directory. The data-structure map test u
             \":db/id\": 4}")
 ```
 
-- Finally, some test within test directory using `cljs.test` and `clojure.test` in a mix of functions from `map-diff` namespace.
+- Finally, add some test within test directory using `cljs.test` and `clojure.test` (remembers that this project uses `cljc` extension long way down) in a mix of functions from `map-diff` namespace.
 
 ---
