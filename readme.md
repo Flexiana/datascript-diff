@@ -42,8 +42,25 @@ Then you can run `yarn` to install dependencies, later you can run some environm
 
 ### Usage
 
+You can use the GUI to prove the diff algorithm, such that image shown:
+![GUI of diff algorithm](img/gui-diff-algorithm.png)
+
+Also you can add a new test within test directory. The data-structure map test uses `map-commit`, `map-revert` and `map-diff` functions from `map-diff` namespace.
+
 ---
 
-### How does it add more tests?
+### How to add more tests?
+
+- Getting data from RR-API. You can get data from a RR account using the console, moreover it uses datalog/datomic schema, but it returns data in valid JSON. To get more information click [here](https://www.putyourleftfoot.in/introduction-to-the-roam-alpha-api) and [here](https://davidbieber.com/snippets/2020-12-22-datalog-queries-for-roam-research/).
+- Escape especial characters from RR-API answer, indeed it should be stringified to **Clojure/Script** to be translated by `roam-research/->clj` function as follows:
+
+```clojure
+(rr/->clj "{\":block/uid\": \"OtQdkIAKn\",
+            \":block/page\": { \":db/id\": 3 },
+            \":edit/user\": { \":db/id\": 1 },
+            \":db/id\": 4}")
+```
+
+- Finally, some test within test directory using `cljs.test` and `clojure.test` in a mix of functions from `map-diff` namespace.
 
 ---
