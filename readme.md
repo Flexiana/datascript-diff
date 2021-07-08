@@ -37,6 +37,7 @@ Then you can run `yarn` to install dependencies, later you can run some environm
 
 - `yarn serve` to show the GUI in the browser (opens http://localhost:8080).
 - `yarn test` to run the test directory (it contains tests that prove diff algorithm with some data).
+- `yarn repl` to run repl environment with shadow-cljs.
 
 ---
 
