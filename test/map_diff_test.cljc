@@ -115,13 +115,18 @@
 (defn seq-diff-commit-revert-test
   [a b]
   (is (= b (->> (seq-diff a b)
-                (seq-commit a))) #?(:clj (format "commit %s -> %s" a b)))
+                (seq-commit a))) #?(:clj (format "commit %s -> %s" a b)
+                                    :cljs (s/format "commit %s -> %s" a b)))
   (is (= a (->> (seq-diff b a)
-                (seq-commit b))) #?(:clj (format "commit %s -> %s" b a)))
+                (seq-commit b))) #?(:clj (format "commit %s -> %s" b a)
+                                    :cljs (s/format "commit %s -> %s" b a)))
   (is (= a (->> (seq-diff a b)
-                (seq-revert b))) #?(:clj (format "revert %s -> %s" b a)))
+                (seq-revert b))) #?(:clj (format "revert %s -> %s" b a)
+                                    :cljs (s/format "revert %s -> %s" b a)))
   (is (= b (->> (seq-diff b a)
-                (seq-revert a))) #?(:clj (format "revert %s -> %s" a b))))
+                (seq-revert a))) #?(:clj (format "revert %s -> %s" a b)
+                                    :cljs (s/format "revert %s -> %s" a b))))
+
 
 (deftest seq-test
   (is (= [:b] (common-ordered-part [:a :b :c] [:c :b :d])))
@@ -173,30 +178,39 @@
     (map-full-test data-a data-b)))
 
 (deftest full-roam-research-data
-  (let [data-a (rr/->clj "{
-  \":block/parents\": [{ \":db/id\": 3 }],
-  \":block/string\": \"7GUIs\",
-  \":create/time\": 1609151779781,
-  \":create/user\": { \":db/id\": 1 },
-  \":block/order\": 0,
-  \":block/open\": true,
-  \":edit/time\": 1609151785742,
-  \":block/uid\": \"OtQdkIAKn\",
-  \":db/id\": 4,
-  \":block/page\": { \":db/id\": 3 },
-  \":edit/user\": { \":db/id\": 1 }}")
-        data-b (rr/->clj "{
-  \":block/parents\": [{ \":db/id\": 3 }],
-  \":block/string\": \"[[Flexiana Framework]]\",
-  \":block/refs\": [{ \":db/id\": 6 }],
-  \":create/time\": 1609151785735,
-  \":create/user\": { \":db/id\": 1 },
-  \":block/order\": 1,
-  \":block/open\": true,
-  \":edit/time\": 1609188039048,
-  \":block/uid\": \"Rm0BLZjrR\",
-  \":edit/seen-by\": [{ \":db/id\": 41 }],
-  \":db/id\": 5,
-  \":block/page\": { \":db/id\": 3 },
-  \":edit/user\": { \":db/id\": 1 }}")]
+  (let [data-a (rr/->clj "{\":block/parents\": [{ \":db/id\": 3 }],
+                           \":block/string\": \"7GUIs\",
+                           \":create/time\": 1609151779781,
+                           \":create/user\": { \":db/id\": 1 },
+                           \":block/order\": 0,
+                           \":block/open\": true,
+                           \":edit/time\": 1609151785742,
+                           \":block/uid\": \"OtQdkIAKn\",
+                           \":db/id\": 4,
+                           \":block/page\": { \":db/id\": 3 },
+                           \":edit/user\": { \":db/id\": 1 }}")
+        data-b (rr/->clj "{\":block/parents\": [{ \":db/id\": 3 }],
+                           \":block/string\": \"[[Flexiana Framework]]\",
+                           \":block/refs\": [{ \":db/id\": 6 }],
+                           \":create/time\": 1609151785735,
+                           \":create/user\": { \":db/id\": 1 },
+                           \":block/order\": 1,
+                           \":block/open\": true,
+                           \":edit/time\": 1609188039048,
+                           \":block/uid\": \"Rm0BLZjrR\",
+                           \":edit/seen-by\": [{ \":db/id\": 41 }],
+                           \":db/id\": 5,
+                           \":block/page\": { \":db/id\": 3 },
+                           \":edit/user\": { \":db/id\": 1 }}")
+        ids-pages-in-account-a (rr/->clj "[[213], [187], [233], [179], [79], [76], [224], [221], [236],
+                                           [204], [212], [215], [246], [182], [234], [259], [216], [229],
+                                           [206], [218], [230], [226], [235], [173], [242], [251], [249],
+                                           [2], [208], [228], [238], [209], [207], [239]]")
+        ids-pages-in-account-b (rr/->clj "[[253], [244], [203], [217], [188], [185], [231], [247],
+                                           [227], [3], [6], [225], [237], [191], [205], [78], [256],
+                                           [164], [211], [232], [181], [180], [240], [222], [184],
+                                           [210], [223], [220], [241]]")]
+    (seq-diff-commit-revert-test ids-pages-in-account-a ids-pages-in-account-b)
     (map-full-test data-a data-b)))
+
+
