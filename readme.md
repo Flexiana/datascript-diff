@@ -12,7 +12,7 @@ The project was developed to be used mainly with ClojureScript, but some namespa
 - [What?](#what)
 - [Installation](#installation)
 - [Usage](#usage)
-- [How does it add more tests?](#how-does-it-add-more-tests)
+- [How to add more tests?](#how-to-add-more-tests)
 
 ---
 
