@@ -65,3 +65,20 @@ Also you can add a new test within test directory. The data-structure map test u
 - Finally, add some test within test directory using `cljs.test` and `clojure.test` (remembers that this project uses `cljc` extension long way down) in a mix of functions from `map-diff` namespace.
 
 ---
+
+### Complex test cases
+
+In the next snipped of code there is a complex query to RR-API, its answer is tested at `map_diff_test.cljc` file with changes in deep data. 
+
+```javascript
+let page = window.roamAlphaAPI.pull("[*]", 262);
+
+let fullPage = {
+  ...page,
+  ":block/children": page[":block/children"].map((id) =>
+    window.roamAlphaAPI.pull("[*]", id[":db/id"])
+  ),
+};
+
+JSON.stringify(fullPage);
+```
