@@ -68,7 +68,7 @@ Also you can add a new test within test directory. The data-structure map test u
 
 ### Complex test cases
 
-In the next 
+In the next snipped of code there is a complex query to RR-API, its answer is tested at `map_diff_test.cljc` file with changes in deep data. 
 
 ```javascript
 let page = window.roamAlphaAPI.pull("[*]", 262);
