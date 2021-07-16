@@ -13,6 +13,7 @@ The project was developed to be used mainly with ClojureScript, but some namespa
 - [Installation](#installation)
 - [Usage](#usage)
 - [How to add more tests?](#how-to-add-more-tests)
+- [Complex test cases](#complex-test-cases)
 
 ---
 
@@ -48,6 +49,17 @@ You can use the GUI to prove the diff algorithm, such that image shown:
 
 Also you can add a new test within test directory. The data-structure map test uses `map-commit`, `map-revert` and `map-diff` functions from `map-diff` namespace.
 
+#### Main functions
+
+- `map-diff` this function implements the **diff algorithm** with maps, for example:
+```clojure
+;; The first one parameter is the previus map and the second one is the new map
+(map-diff {} {:a 2}) ;; -> {[:a] {:+ 2}} where :+ means a new value added
+                     ;; and each keword added is wrapped within a vector i.e. [:a]
+(map-diff {:a 1} {:b 2 :c 3}) ;; -> {[:b] {:+ 2}, [:c] {:+ 3}, [:a] {:- 1}}
+                              ;; where :- means that a value has been removed 
+```
+
 ---
 
 ### How to add more tests?
@@ -68,11 +80,14 @@ Also you can add a new test within test directory. The data-structure map test u
 
 ### Complex test cases
 
-In the next snipped of code there is a complex query to RR-API, its answer is tested at `map_diff_test.cljc` file with changes in deep data. 
+In the next snipped of code there is a complex query to RR-API, its answer is tested at `map_diff_test.cljc` file with changes in deep data. So then we can use the RR-API as a JS function and get complex pages from RoamResearch. 
 
 ```javascript
+// 262 is the page's ID, this function get all data from the page
 let page = window.roamAlphaAPI.pull("[*]", 262);
 
+// In this object is spread the data from children nodes
+// with another call to RR-API
 let fullPage = {
   ...page,
   ":block/children": page[":block/children"].map((id) =>
