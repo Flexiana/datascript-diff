@@ -1,20 +1,25 @@
 (ns map-diff)
 
+
 (defn- seq-diff
   [a b]
   ((resolve 'seq-diff/seq-diff) a b))
+
 
 (defn- seq-commit
   [a diff]
   ((resolve 'seq-diff/seq-commit) a diff))
 
+
 (defn- seq-revert-diff
   [diff]
   ((resolve 'seq-diff/seq-revert-diff) diff))
 
+
 (defn not-map-but-coll?
   [x]
   (and (not (map? x)) (coll? x)))
+
 
 (defn expansion
   "Collects what has been added, or modified"
@@ -30,6 +35,7 @@
                 (not= v a-value) (-> (assoc acc vector-key {:- a-value :+ v}))
                 :else acc))) {} b))
 
+
 (defn narrowing
   "Collects what has been deleted. Run 'fn expansion' first"
   [acc a b]
@@ -44,8 +50,9 @@
                                                     (reduce (fn [acc [k v]] (assoc acc (concat vector-key k) v)) acc d)))
                 (nil? b-value) (assoc-in acc [vector-key] {:- a-value})
                 :else acc)))
-    acc
-    a))
+          acc
+          a))
+
 
 (defn map-diff
   "Generates a git like diff from two maps."
@@ -53,6 +60,7 @@
   {:pre [(every? map? [a b])]}
   (-> (expansion a b)
       (narrowing a b)))
+
 
 (defn map-commit
   "Applies a diff to a map"
@@ -71,7 +79,8 @@
                         mv (dissoc acc (first ks))
                         (every? map? [ov v]) (assoc-in acc ks (map-commit ov v))
                         (every? not-map-but-coll? [ov v]) (assoc-in acc ks (seq-commit ov v))))))
-    a-map diff))
+          a-map diff))
+
 
 (defn- map-revert-diff
   [diff]
@@ -87,6 +96,7 @@
                   :else v)))
             diff)
        (into {})))
+
 
 (defn map-revert
   "Revert a diff on map"

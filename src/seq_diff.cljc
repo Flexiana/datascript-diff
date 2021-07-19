@@ -1,28 +1,35 @@
 (ns seq-diff)
 
+
 (defn- map-diff
   [a b]
   ((resolve 'map-diff/map-diff) a b))
+
 
 (defn- map-commit
   [a b]
   ((resolve 'map-diff/map-commit) a b))
 
+
 (defn map-revert-diff
   [v]
   ((resolve 'map-diff/map-revert-diff) v))
+
 
 (defn not-map-but-coll?
   [x]
   (and (not (map? x)) (coll? x)))
 
+
 (defn- get-common-indexes
   [v e]
   (keep-indexed (fn [idx v] (when (= e v) idx)) (vec v)))
 
+
 (defn- longer
   [x y]
   (if (> (count (set x)) (count (set y))) x y))
+
 
 (defn- glue-right
   [acc e]
@@ -30,11 +37,13 @@
     (concat acc [e])
     acc))
 
+
 (defn- glue-left
   [acc e]
   (if (< e (first acc))
     (concat [e] acc)
     acc))
+
 
 (defn ordered-parts
   [indexes]
@@ -54,6 +63,7 @@
                     [actual]
                     (rest (reduce glue-right [actual] after))))))))
 
+
 (defn common-ordered-part
   [x y]
   (let [longest (fn [op]
@@ -65,6 +75,7 @@
                           ordered-parts
                           longest)]
     (map (vec x) ordered-part)))
+
 
 (defn seq-diff
   "Create diff from two sequences"
@@ -90,6 +101,7 @@
         (= 0 a-distance b-distance) (recur rav rvb (vec (rest common)) (conj acc (if fav nil :nil)))
         (= a-distance b-distance) (recur rav rvb common (conj acc (if (= fav fbv) fav {:- fav :+ fbv})))))))
 
+
 (defn- extend-seq
   [s d]
   {:pre [(every? not-map-but-coll? [s d])]}
@@ -106,6 +118,7 @@
         dp (recur s (rest d) (conj acc nil))
         :else (recur (rest s) (rest d) (conj acc fs))))))
 
+
 (defn seq-commit
   "Commit a diff on sequence"
   [a-seq diff]
@@ -121,7 +134,8 @@
                   (every? map? [orig change]) (conj acc (map-commit orig change))
                   (every? not-map-but-coll? [orig change]) (conj acc (seq-commit orig change))
                   (every? nil? [pv mv]) (conj acc orig))))
-      [] merged)))
+            [] merged)))
+
 
 (defn- seq-revert-diff
   [diff]
@@ -136,6 +150,7 @@
              (coll? v) (seq-revert-diff v)
              :else v)))
        diff))
+
 
 (defn seq-revert
   "Revert a diff on sequence"

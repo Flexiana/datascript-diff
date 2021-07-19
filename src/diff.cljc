@@ -1,15 +1,20 @@
 (ns diff
-  (:require [datascript.core :as ds]
-            [datascript.db :refer [db-from-reader]]
-            [clojure.edn :as edn]
-            [clojure.set :refer [difference
-                                 intersection]]))
+  (:require
+    [clojure.edn :as edn]
+    [clojure.set :refer [difference
+                         intersection]]
+    [datascript.core :as ds]
+    [datascript.db :refer [db-from-reader]]))
 
-(defn all-paths-aux [table path]
-  (letfn [(hash-f [[key val]]
+
+(defn all-paths-aux
+  [table path]
+  (letfn [(hash-f
+            [[key val]]
             (all-paths-aux val
                            (conj path key)))
-          (vect-f [idx val]
+          (vect-f
+            [idx val]
             (all-paths-aux val
                            (conj path idx)))]
     (cond
@@ -21,10 +26,14 @@
                                         (map-indexed vect-f table)))
       :else             [path])))
 
-(defn all-paths [table]
+
+(defn all-paths
+  [table]
   (all-paths-aux table []))
 
-(defn map-diff [have want]
+
+(defn map-diff
+  [have want]
   (let [idx-have        (set (all-paths have))
         idx-want        (set (all-paths want))
         eq-paths        (intersection idx-want idx-have)
@@ -50,20 +59,24 @@
                                     :expected expected
                                     :mismatch :diff}))) eq-paths))}))
 
-(defn gen-uuid []
+
+(defn gen-uuid
+  []
   #?(:clj (java.util.UUID/randomUUID)
      :cljs (random-uuid)))
+
 
 (defn remove-idx
   ([i]
    (keep-indexed
-    (fn [idx el]
-      (when-not (== i idx)
-        el))))
+     (fn [idx el]
+       (when-not (== i idx)
+         el))))
   ([i coll]
    (into []
          (remove-idx i)
          coll)))
+
 
 (defn remove-idxs
   ([coll is]
@@ -80,7 +93,9 @@
      (recur (remove-idxs coll is) is' iss)
      (remove-idxs coll is))))
 
-(defn paths-range-to-last-idx [want-path all-paths]
+
+(defn paths-range-to-last-idx
+  [want-path all-paths]
   (let [unique-paths (set all-paths)]
     (when (contains? unique-paths want-path)
       (let [path-max-idx  (last want-path)
@@ -96,6 +111,7 @@
                  (not is-last-path?))
           (map #(conj (pop want-path) %) (reverse (range path-max-idx (inc gt-idx))))
           want-path)))))
+
 
 (defn dissoc-in
   ([m ks]
@@ -115,7 +131,9 @@
      (recur (dissoc-in m ks) ks' kss)
      (dissoc-in m ks))))
 
-(defn diffrange+ [path diff diffs]
+
+(defn diffrange+
+  [path diff diffs]
   (if (number? (last path))
     (->> diffs
          (filter #(and (number?  (-> %
@@ -127,8 +145,9 @@
     [diff]))
 
 
-(defn commit+ [{:keys [have-map want-map] :as st}
-               diffs]
+(defn commit+
+  [{:keys [have-map want-map] :as st}
+   diffs]
   (cond
     (and (nil? have-map)
          (map? want-map))  (reduce (fn [acc {:keys [expected path]}]
@@ -146,17 +165,19 @@
                                      #?(:clj (try (assoc-in acc path expected)
                                                   (catch ClassCastException e
                                                     (assoc-in
-                                                     (dissoc-in acc [(first path)])
-                                                     path
-                                                     expected)))
+                                                      (dissoc-in acc [(first path)])
+                                                      path
+                                                      expected)))
                                         :cljs (try (assoc-in acc path expected)
                                                    (catch :default e
                                                      (assoc-in
-                                                      (dissoc-in acc [(first path)])
-                                                      path
-                                                      expected))))) have-map diffs)))
+                                                       (dissoc-in acc [(first path)])
+                                                       path
+                                                       expected))))) have-map diffs)))
 
-(defn diffrange- [path diff diffs]
+
+(defn diffrange-
+  [path diff diffs]
   (if (number? (last path))
     (->> diffs
          (filter #(and (number?  (-> %
@@ -170,15 +191,18 @@
                        last) >))
     [diff]))
 
-(defn commit- [{:keys [have-map want-map] :as st} diffs]
+
+(defn commit-
+  [{:keys [have-map want-map] :as st} diffs]
   (cond
     :else (reduce (fn [acc {:keys [path]}]
                     (dissoc-in acc path)) have-map diffs)))
 
 
-(defn commit-diff [{:keys [have-map want-map] :as st}
-                   diffs
-                   {:keys [path expected actual mismatch] :as diff}]
+(defn commit-diff
+  [{:keys [have-map want-map] :as st}
+   diffs
+   {:keys [path expected actual mismatch] :as diff}]
   (case mismatch
     :+    (let [diffs+ (diffrange+ path diff diffs)]
             (-> st
@@ -188,14 +212,16 @@
             (-> st
                 (assoc :have-map (commit- st diffs-))
                 (update
-                 :txs
-                 concat
-                 (map #(assoc % :id (gen-uuid)) diffs-))))
+                  :txs
+                  concat
+                  (map #(assoc % :id (gen-uuid)) diffs-))))
     :diff (-> st
               (update :have-map #(assoc-in % path expected))
               (update :txs concat (map #(assoc % :id (gen-uuid)) diffs)))))
 
-(defn uncommit [txs id have-map-st]
+
+(defn uncommit
+  [txs id have-map-st]
   (let [{:keys [path expected actual mismatch]} (first (filter #(= id (% :id)) txs))]
     (case mismatch
       :diff (assoc-in have-map-st path actual)
