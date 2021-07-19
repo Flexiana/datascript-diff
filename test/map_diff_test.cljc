@@ -158,17 +158,17 @@
   (seq-diff-commit-revert-test [{:a {:a {:a 1 :b 2}} :b 2 :d {:e 5}}] [{:a {:a {:a 2} :b 2} :b 3}])
   (seq-diff-commit-revert-test [1 1 2 3 5 7 10 18 {:a "b"} 19 13 15]
                                [1 "a" "b" 1 3 1 1 2 18 {:a "c"} 19 4 5 6 7 8 9 10 11 12])
-  (is (= (first (:to-print (seq-diff [{:a 2} 2] [{:a 3} 2])))
-         (:to-print (map-diff {:a 2} {:a 3}))))
-  (is (= (first (:+ (seq-diff [{:a 2} 2] [{:a 3} 2])))
-         (:+ (map-diff {:a 2} {:a 3}))))
-  (is (= (first (:- (seq-diff [{:a 2} 2] [{:a 3} 2])))
-         (:- (map-diff {:a 2} {:a 3}))))
+  (is (= (first (seq-diff [{:a 2} 2] [{:a 3} 2]))
+         (map-diff {:a 2} {:a 3})))
+  (is (= (first (seq-diff [{:a 2} 2] [{:a 3} 2]))
+         (map-diff {:a 2} {:a 3})))
+  (is (= (first (seq-diff [{:a 2} 2] [{:a 3} 2]))
+         (map-diff {:a 2} {:a 3})))
   (is (= [{:a 3} 2] (seq-commit [{:a 2} 2] (seq-diff [{:a 2} 2] [{:a 3} 2]))))
-  (is (= (first (:- (seq-diff [{:a 2} 2] [{:a 3} 2])))
-         (:- (map-diff {:a 2} {:a 3}))))
-  (is (= (first (:+ (seq-diff [{:a 2} 2] [{:a 3} 2])))
-         (:+ (map-diff {:a 2} {:a 3})))))
+  (is (= (first (seq-diff [{:a 2} 2] [{:a 3} 2]))
+         (map-diff {:a 2} {:a 3})))
+  (is (= (first (seq-diff [{:a 2} 2] [{:a 3} 2]))
+         (map-diff {:a 2} {:a 3}))))
 
 
 (deftest partial-roam-research-data
