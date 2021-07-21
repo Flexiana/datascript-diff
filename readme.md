@@ -101,3 +101,11 @@ let fullPage = {
 
 JSON.stringify(fullPage);
 ```
+
+This query is getting from RR-API all pages with their inside data. This one is tested with the test case `real-data-in-vector` at `map_diff_test.cljc` file.
+
+```javascript
+let allPages = window.roamAlphaAPI.q('[ :find (pull ?e [*]) :where [?e :node/title]]');
+
+JSON.stringify(allPage);
+```
