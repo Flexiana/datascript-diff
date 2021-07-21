@@ -1,19 +1,23 @@
 (ns diff-ui
-  (:require [map-diff :refer [map-diff
-                              map-revert
-                              map-commit]]
-            [seq-diff :refer [extend-seq
-                              seq-diff
-                              seq-revert
-                              seq-commit]]
-            [reagent.core :as r]
-            [clojure.edn :as edn]))
+  (:require
+    [clojure.edn :as edn]
+    [map-diff :refer [map-diff
+                      map-revert
+                      map-commit]]
+    [reagent.core :as r]
+    [seq-diff :refer [extend-seq
+                      seq-diff
+                      seq-revert
+                      seq-commit]]))
+
 
 (defonce state (r/atom {}))
+
 
 (defn- not-map-but-coll?
   [x]
   (and (not (map? x)) (coll? x)))
+
 
 (defn- commit
   [a d]
@@ -21,11 +25,13 @@
     (map-commit a d)
     (seq-commit a d)))
 
+
 (defn- revert
   [a d]
   (if (map? a)
     (map-revert a d)
     (seq-revert a d)))
+
 
 (defn- diff
   [a b]
@@ -33,6 +39,7 @@
     (every? map? [a b]) (map-diff a b)
     (every? not-map-but-coll? [a b]) (seq-diff a b)
     :else nil))
+
 
 (defn- process-inputs
   [{:keys [a-input b-input]}]
@@ -44,6 +51,7 @@
     (if (empty? difference)
       []
       [a difference commit revert])))
+
 
 (defn- update-diff!
   [state]
@@ -57,15 +65,17 @@
                      (swap! state assoc :error (.-message e))
                      []))]
     (swap! state assoc
-      :a-value a-value
-      :diff diff
-      :commit commit
-      :revert revert)))
+           :a-value a-value
+           :diff diff
+           :commit commit
+           :revert revert)))
+
 
 (defn- diff-div
   [color k v]
   [:div (str k " ") [:a {:style {:background color
                                  :width      :max-content}} v]])
+
 
 (defn table-row
   []
@@ -77,6 +87,7 @@
             :text-align      :center
             :border-collapse :collapse}}])
 
+
 (defn table
   [body]
   [:div [:div {:style {:border-style :solid
@@ -84,6 +95,7 @@
                        :border-color :gray}}
          [:table {:style {:cellpadding "0px"}}
           [:tbody body]]]])
+
 
 (defn td-underline
   ([]
@@ -94,6 +106,7 @@
                  :border-width  :thin
                  :background    color}} content]))
 
+
 (defn td
   ([]
    (td :white ""))
@@ -103,10 +116,12 @@
    ^{:key (gensym)}
    [:td {:style {:background color}} content]))
 
+
 (defn- merge-map
   [a-map diff]
   (reduce (fn [acc [ks v]]
             (assoc-in acc (if (coll? ks) ks (vector ks)) v)) a-map diff))
+
 
 (defn- colorize-core
   [a-value diff]
@@ -164,13 +179,16 @@
       (map? diff) (color-map2 a-value diff)
       (not-map-but-coll? diff) (color-seq diff))))
 
+
 (defonce width (r/atom 175))
+
 
 (defn- copy-master-width!
   []
   (let [w (try (-> js/document (.getElementById "master") .-offsetWidth)
                (catch :default e @width))]
     (str (reset! width w) "px")))
+
 
 (defn- visual-div
   [text id]
@@ -187,6 +205,7 @@
             :border-color :gray
             :height       "380px"}} text])
 
+
 (defn- colorize
   [a-value diff]
   (let [c (colorize-core a-value diff)]
@@ -194,6 +213,7 @@
       (into (visual-div "" "master")
             (rest c))
       (visual-div "No diff calculated" "master"))))
+
 
 (defn- text-area
   ([value]
@@ -211,10 +231,12 @@
      :value     value
      :on-change on-change}]))
 
+
 (defn- on-change
   [state k event]
   (swap! state assoc k (-> event .-target .-value))
   (update-diff! state))
+
 
 (defn diff-ui
   [state]

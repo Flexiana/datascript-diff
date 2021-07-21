@@ -1,12 +1,14 @@
 (ns diff-test
-  (:require [diff :refer [all-paths
-                          map-diff
-                          remove-idxs
-                          paths-range-to-last-idx
-                          commit-diff]]
-            #?(:clj [clojure.test :refer [deftest is]]
-               :cljs [cljs.test :refer [deftest is] :include-macros true])
-            [matcher-combinators.test :refer [match?]]))
+  (:require
+    #?(:clj [clojure.test :refer [deftest is]]
+       :cljs [cljs.test :refer [deftest is] :include-macros true])
+    [diff :refer [all-paths
+                  map-diff
+                  remove-idxs
+                  paths-range-to-last-idx
+                  commit-diff]]
+    [matcher-combinators.test :refer [match?]]))
+
 
 (deftest all-paths-test
   (is (match? [[]] (all-paths {})))
@@ -88,6 +90,7 @@
                [1 :c :d 1]] (all-paths [{:a 1 :b 2}
                                         {:d 2
                                          :c {:d [4 5]}}]))))
+
 
 (deftest full-diff
   (is (match? [] (:diffs (map-diff {} {}))))
@@ -175,6 +178,7 @@
                            :b [1 2 3 4 5 6]} {:b [4 5 6]
                                               :a [123]})))))
 
+
 (deftest remove-idxs-test
   (is (match? [2 [0 1]] (remove-idxs [2 [0 1 2]] [1 2]))))
 
@@ -186,6 +190,7 @@
               (paths-range-to-last-idx [3 1] (all-paths [1 2 3 [3 4 5 6]]))))
   (is (match? [2]
               (paths-range-to-last-idx [2] (all-paths [1 2 3 [3 4 5 6]])))))
+
 
 (deftest commit-diff-test
   (is (match? {:have-map {:a 1}}
@@ -240,12 +245,12 @@
                                         :txs)))
   (is (match? {:have-map {:a {0 1}}}
               (dissoc (commit-diff
-                       {:have-map {:a 1}
-                        :want-map {:a [1 2]}}
-                       [{:path [:a 0], :expected 1, :mismatch :+}
-                        {:path [:a 1], :expected 2, :mismatch :+}
-                        {:path [:a], :actual 1, :mismatch :-}]
-                       {:path [:a 0], :expected 1, :mismatch :+})
+                        {:have-map {:a 1}
+                         :want-map {:a [1 2]}}
+                        [{:path [:a 0], :expected 1, :mismatch :+}
+                         {:path [:a 1], :expected 2, :mismatch :+}
+                         {:path [:a], :actual 1, :mismatch :-}]
+                        {:path [:a 0], :expected 1, :mismatch :+})
                       :txs)))
   (is (match? {:have-map [1 2]}
               (dissoc (commit-diff {:have-map [1 2 3 4 5]
@@ -283,9 +288,9 @@
                                        {:a {:b [{:c 3}
                                                 [:d 4]]}}]}
                            (:diffs (map-diff
-                                    [{:a 2}
-                                     {:a {:b [{:c 3}
-                                              [:d 4]]}}]
-                                    [{:a 1}
-                                     {:a 1}]))
+                                     [{:a 2}
+                                      {:a {:b [{:c 3}
+                                               [:d 4]]}}]
+                                     [{:a 1}
+                                      {:a 1}]))
                            {:path [1 :a :b 0 :c] :expected 3 :mismatch :+}))))

@@ -13,6 +13,7 @@ The project was developed to be used mainly with ClojureScript, but some namespa
 - [Installation](#installation)
 - [Usage](#usage)
 - [How to add more tests?](#how-to-add-more-tests)
+- [Complex test cases](#complex-test-cases)
 
 ---
 
@@ -50,7 +51,22 @@ Also you can add a new test within test directory. The data-structure map test u
 
 Functions `seq-commit`, `seq-rever` and `seq-diff` from `seq-diff` namespace may be used over vectors.
 ![GUI of diff algorithm over sequences (vector)](img/gui-diff-algorithm-vec.png)
+=======
+#### Main functions
 
+- `map-diff` this function implements the **diff algorithm** with maps, for example:
+```clojure
+;; The first one parameter is the previus map and the second one is the new map
+(map-diff {} {:a 2}) ;; -> {[:a] {:+ 2}} where :+ means a new value added
+                     ;; and each keword added is wrapped within a vector i.e. [:a]
+(map-diff {:a 1} {:b 2 :c 3}) ;; -> {[:b] {:+ 2}, [:c] {:+ 3}, [:a] {:- 1}}
+                              ;; where :- means that a value has been removed 
+```
+- `seq-diff` implements the **diff algorithm** with sequences:
+```clojure
+;; The first parameter is source sequence and the second one is sequence we need to get
+(seq-diff [1 4] [1 2 3]);; -> [nil {:- 4, :+ 2} {:- nil, :+ 3}] gives vector of 3 elements: nil means no changes, {:- 4, :+ 2} means remove 4 and put 2, {:- nil, :+ 3} means add 3
+```
 ---
 
 ### How to add more tests?
@@ -68,3 +84,23 @@ Functions `seq-commit`, `seq-rever` and `seq-diff` from `seq-diff` namespace may
 - Finally, add some test within test directory using `cljs.test` and `clojure.test` (remembers that this project uses `cljc` extension long way down) in a mix of functions from `map-diff` namespace.
 
 ---
+
+### Complex test cases
+
+In the next snipped of code there is a complex query to RR-API, its answer is tested at `map_diff_test.cljc` file with changes in deep data. So then we can use the RR-API as a JS function and get complex pages from RoamResearch. 
+
+```javascript
+// 262 is the page's ID, this function get all data from the page
+let page = window.roamAlphaAPI.pull("[*]", 262);
+
+// In this object is spread the data from children nodes
+// with another call to RR-API
+let fullPage = {
+  ...page,
+  ":block/children": page[":block/children"].map((id) =>
+    window.roamAlphaAPI.pull("[*]", id[":db/id"])
+  ),
+};
+
+JSON.stringify(fullPage);
+```

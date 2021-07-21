@@ -1,19 +1,20 @@
 (ns map-diff-test
   (:require
-   #?(:cljs [goog.string :as s])
-   #?(:cljs [goog.string.format])
-   #?(:cljs [roam-research :as rr])
-   #?(:cljs [cljs.test :refer [deftest is]]
-      :clj [clojure.test :refer [deftest is format]])
-   [seq-diff :refer [seq-diff
-                     common-ordered-part
-                     seq-revert
-                     seq-commit]]
-   [map-diff :refer [map-commit
-                     map-revert
-                     map-diff
-                     narrowing
-                     expansion]]))
+    #?(:cljs [cljs.test :refer [deftest is]]
+       :clj [clojure.test :refer [deftest is format]])
+    #?(:cljs [goog.string :as s])
+    #?(:cljs [goog.string.format])
+    [map-diff :refer [map-commit
+                      map-revert
+                      map-diff
+                      narrowing
+                      expansion]]
+    #?(:cljs [roam-research :as rr])
+    [seq-diff :refer [seq-diff
+                      common-ordered-part
+                      seq-revert
+                      seq-commit]]))
+
 
 (deftest step-one
   (is (= {} (expansion {} {})))
@@ -36,10 +37,12 @@
   (is (= {[:b] [{:- 1} {:- 2} {:- 3} nil nil nil]}
          (expansion {:b [1 2 3 4 5 6]} {:b [4 5 6]}))))
 
+
 (defn step-2
   [a b]
   (-> (expansion a b)
       (narrowing a b)))
+
 
 (deftest step-two
   (is (= {[:a] {:- "a"}} (step-2 {:a "a"} {})))
@@ -48,6 +51,7 @@
   (is (= {[:a] {:- {:a 1}}} (narrowing {} {:a {:a 1}} {})))
   (is (= {'(:a :a) {:- 2, :+ 1}, '(:a :b) {:- 2}} (narrowing {'(:a :a) {:- 2, :+ 1}} {:a {:a 2 :b 2}} {:a {:a 1}})))
   (is (= {[:a] {:- {:a {:b 5}}, :+ 2}} (step-2 {:a {:a {:b 5}}} {:a 2}))))
+
 
 (deftest full-diff
   (is (= {} (map-diff {} {})))
@@ -72,6 +76,7 @@
                    {:b [4 5 6]
                     :a [123]}))))
 
+
 (defn map-full-test
   [a b]
   (is (= b (->> (map-diff a b)
@@ -86,6 +91,7 @@
   (is (= b (->> (map-diff b a)
                 (map-revert a))) #?(:cljs (s/format "revert %s -> %s" a b)
                                     :clj (format "revert %s -> %s" a b))))
+
 
 (deftest map-diff-commit-test
   (map-full-test {} {})
@@ -111,6 +117,7 @@
                   :a "c"
                   :b "apple"})
   (map-full-test {":a" 1} {":a" 3}))
+
 
 (defn seq-diff-commit-revert-test
   [a b]
@@ -142,6 +149,7 @@
   (seq-diff-commit-revert-test [:a :b :c] [:c :b :d])
   (seq-diff-commit-revert-test [1 2 [3 1]] [1 2 [3 2]]))
 
+
 (deftest map-in-seq
   (seq-diff-commit-revert-test [{:a {:a 2}}] [{:a {:a 3}}])
   (seq-diff-commit-revert-test [{:a {:a 2}}] [{:a {:a 3}}])
@@ -162,6 +170,7 @@
   (is (= (first (:+ (seq-diff [{:a 2} 2] [{:a 3} 2])))
          (:+ (map-diff {:a 2} {:a 3})))))
 
+
 (deftest partial-roam-research-data
   (let [data-a (rr/->clj "{\":block/parents\": [{ \":db/id\": 3 }]}")
         data-b (rr/->clj "{\":block/uid\": \"OtQdkIAKn\",
@@ -176,6 +185,7 @@
             [":db/id"] {:+ 4}}
            (expansion {} data-b)))
     (map-full-test data-a data-b)))
+
 
 (deftest full-roam-research-data
   (let [data-a (rr/->clj "{\":block/parents\": [{ \":db/id\": 3 }],
@@ -213,4 +223,12 @@
     (seq-diff-commit-revert-test ids-pages-in-account-a ids-pages-in-account-b)
     (map-full-test data-a data-b)))
 
+
+(deftest test-nested-case-with-complex-case-A
+  (let [data (rr/->clj "{\":db/id\":262,\":block/children\":[{\":block/parents\":[{\":db/id\":262}],\":block/string\":\"**This one is a title**\",\":create/time\":1625859838582,\":create/user\":{\":db/id\":245},\":block/order\":0,\":block/open\":true,\":edit/time\":1625859854754,\":block/uid\":\"6hhjCNnbV\",\":db/id\":263,\":block/page\":{\":db/id\":262},\":block/children\":[{\":db/id\":264},{\":db/id\":265}],\":edit/user\":{\":db/id\":245}},{\":block/parents\":[{\":db/id\":262}],\":block/string\":\"Connect with [[Flexiana Clojure Academy]]\",\":block/refs\":[{\":db/id\":79}],\":create/time\":1626110920175,\":create/user\":{\":db/id\":245},\":block/order\":1,\":block/open\":true,\":edit/time\":1626110934621,\":block/uid\":\"nokyRsv6z\",\":db/id\":273,\":block/page\":{\":db/id\":262},\":edit/user\":{\":db/id\":245}},{\":block/parents\":[{\":db/id\":262}],\":block/string\":\"{{[[TODO]]}} Make another complex test with nested arrays\",\":block/refs\":[{\":db/id\":276}],\":create/time\":1626110937038,\":create/user\":{\":db/id\":245},\":block/order\":2,\":block/open\":true,\":edit/time\":1626112337695,\":block/uid\":\"ROPniJBtp\",\":db/id\":274,\":block/page\":{\":db/id\":262},\":edit/user\":{\":db/id\":245}},{\":block/parents\":[{\":db/id\":262}],\":block/string\":\"{{[[TODO]]}} Create a query with datalog to get childrens recursively\",\":block/refs\":[{\":db/id\":276}],\":create/time\":1626111227098,\":create/user\":{\":db/id\":245},\":block/order\":3,\":block/open\":true,\":edit/time\":1626111776789,\":block/uid\":\"g89JcbFKO\",\":db/id\":278,\":block/page\":{\":db/id\":262},\":edit/user\":{\":db/id\":245}},{\":block/parents\":[{\":db/id\":262}],\":block/string\":\"{{[[TODO]]}} Create another test case where it uses maps within vectors\",\":block/refs\":[{\":db/id\":276}],\":create/time\":1626111298863,\":create/user\":{\":db/id\":245},\":block/order\":4,\":block/open\":true,\":edit/time\":1626111653970,\":block/uid\":\"oYg1daORN\",\":db/id\":281,\":block/page\":{\":db/id\":262},\":edit/user\":{\":db/id\":245}},{\":block/parents\":[{\":db/id\":262}],\":block/string\":\"{{query: {and: [[TODO]]}}}\",\":block/refs\":[{\":db/id\":276}],\":create/time\":1626112147053,\":create/user\":{\":db/id\":245},\":block/order\":5,\":block/open\":true,\":edit/time\":1626112203499,\":block/uid\":\"zC-39mftY\",\":db/id\":282,\":block/page\":{\":db/id\":262},\":edit/user\":{\":db/id\":245}}],\":block/uid\":\"w96hZCtfv\",\":create/time\":1625859836790,\":create/user\":{\":db/id\":245},\":edit/time\":1625859836790,\":edit/user\":{\":db/id\":245},\":node/title\":\"Complex test case | A\"}")]
+    (map-full-test (update-in data [":block/children" 0 ":block/parents" 0 ":db/id"] inc) data)
+    (is (= {[":block/children"] [{[":block/parents"] [nil], [":block/children"] [nil {[":db/id"] {:- 266, :+ 265}}]} nil nil nil nil nil]}
+           (map-diff (update-in data [":block/children" 0 ":block/children" 1 ":db/id"] inc) data)))
+    (is (= {[":block/children"] [{[":block/parents"] [nil], [":block/children"] [{[":db/id"] {:- 263, :+ 264}} nil]} nil nil nil nil nil]}
+           (map-diff (update-in data [":block/children" 0 ":block/children" 0 ":db/id"] dec) data)))))
 

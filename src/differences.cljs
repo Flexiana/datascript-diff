@@ -1,17 +1,20 @@
 (ns differences
   (:require
-   [diff :refer [map-diff
-                 commit-diff
-                 uncommit]]
-   [reagent.core :as r]
-   [clojure.edn :as edn]))
+    [clojure.edn :as edn]
+    [diff :refer [map-diff
+                  commit-diff
+                  uncommit]]
+    [reagent.core :as r]))
 
-(defn input->map [input]
+
+(defn input->map
+  [input]
   (try
     (edn/read-string
-     input)
+      input)
     (catch js/Error e
       e)))
+
 
 (defn map-diffs-from-editor
   [{:keys [have-map
@@ -19,7 +22,9 @@
   (merge state
          (map-diff have-map want-map)))
 
-(defn commit-diff! [*state diffs diff]
+
+(defn commit-diff!
+  [*state diffs diff]
   (swap! *state
          (fn [st]
            (let [{:keys [have-map] :as updated-st}
@@ -27,7 +32,9 @@
              (assoc updated-st
                     :have-map-input (str have-map))))))
 
-(defn uncommit! [*state txs id]
+
+(defn uncommit!
+  [*state txs id]
   (swap! *state
          (fn [st]
            (let [updated-st  (update st :have-map (partial uncommit txs id))]
@@ -44,7 +51,9 @@
                         :want-map
                         str))))))
 
-(defn map-diffs-ui [*state {:keys [txs diffs] :as state}]
+
+(defn map-diffs-ui
+  [*state {:keys [txs diffs] :as state}]
   [:table
    [:thead [:tr {:style {:border "1px solid black"}}
             [:th {:style {:border "1px solid black"}}
@@ -59,27 +68,29 @@
                             map-diffs-from-editor
                             :diffs)]
              (map
-              (fn [{:keys [path expected actual mismatch] :as diff}]
-                (when-not (empty? path)
-                  [:tr {:key   (apply str [path expected actual mismatch])
-                        :style {:border           "1px solid black"
-                                :background-color (case mismatch
-                                                    :+    "rgba(51, 170, 51, .7)"
-                                                    :-    "rgba(170, 51, 51, .7)"
-                                                    :diff "rgba(254, 241, 96, 0.7)")}}
-                   [:td {:style {:border "1px solid black"}}
-                    (str path)]
-                   [:td {:style {:border "1px solid black"}}
-                    (str expected)]
-                   [:td {:style {:border "1px solid black"}}
-                    (str actual)]
-                   [:td {:style {:border "1px solid black"}}
-                    (name mismatch)]
-                   [:td
-                    [:button {:on-click #(commit-diff! *state diffs diff)}
-                     "Commit Diff"]]])) diffs))]])
+               (fn [{:keys [path expected actual mismatch] :as diff}]
+                 (when-not (empty? path)
+                   [:tr {:key   (apply str [path expected actual mismatch])
+                         :style {:border           "1px solid black"
+                                 :background-color (case mismatch
+                                                     :+    "rgba(51, 170, 51, .7)"
+                                                     :-    "rgba(170, 51, 51, .7)"
+                                                     :diff "rgba(254, 241, 96, 0.7)")}}
+                    [:td {:style {:border "1px solid black"}}
+                     (str path)]
+                    [:td {:style {:border "1px solid black"}}
+                     (str expected)]
+                    [:td {:style {:border "1px solid black"}}
+                     (str actual)]
+                    [:td {:style {:border "1px solid black"}}
+                     (name mismatch)]
+                    [:td
+                     [:button {:on-click #(commit-diff! *state diffs diff)}
+                      "Commit Diff"]]])) diffs))]])
 
-(defn txs-ui [*state {:keys [txs]}]
+
+(defn txs-ui
+  [*state {:keys [txs]}]
   [:table {:style {:margin          :auto
                    :border          "1px solid black"
                    :border-collapse "collapse"
@@ -118,7 +129,9 @@
                           :want-map-input ""
                           :txs []}))
 
-(defn ui [*state]
+
+(defn ui
+  [*state]
   (let [{:keys [have-map-input
                 want-map-input]} @*state]
     [:div {:style {:margin :auto

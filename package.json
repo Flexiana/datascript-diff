@@ -12,7 +12,7 @@
   },
   "scripts": {
     "repl": "shadow-cljs node-repl",
-    "test": "shadow-cljs compile test && node out/node-tests.js",
+    "test": "shadow-cljs compile test",
     "serve": "shadow-cljs watch diffs"
   }
 }
