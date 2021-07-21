@@ -232,3 +232,21 @@
     (is (= {[":block/children"] [{[":block/parents"] [nil], [":block/children"] [{[":db/id"] {:- 263, :+ 264}} nil]} nil nil nil nil nil]}
            (map-diff (update-in data [":block/children" 0 ":block/children" 0 ":db/id"] dec) data)))))
 
+
+(defn update-id
+  [m]
+  (assoc-in m [0 "id"] (str "F-" (get-in m [0 "id"]))))
+
+
+(defn delete-children
+  [m]
+  (assoc-in m [0 "children"] []))
+
+
+(deftest real-data-in-vector
+  (let [data-a (rr/->clj "[[{\"id\":276,\"uid\":\"LhZeYTZQ0\",\"time\":1626110980956,\"user\":{\"id\":245},\"title\":\"TODO\"}],[{\"user\":{\"id\":1},\"seen-by\":[{\"id\":245}],\"time\":1609313306401,\"title\":\"Flexiana Clojure Academy\",\"children\":[{\"id\":80},{\"id\":81},{\"id\":84},{\"id\":90},{\"id\":99},{\"id\":108}],\"uid\":\"T8N9qXG_o\",\"id\":79,\"sidebar\":1}],[{\"id\":251,\"children\":[{\"id\":252}],\"uid\":\"Tb8ASGrTz\",\"time\":1625229073776,\"user\":{\"id\":1},\"title\":\"RoamResearch\"}],[{\"id\":1609151756506,\"uid\":\"12-28-2020\",\"time\":1609151756509,\"user\":{\"id\":1},\"title\":\"December 28th, 2020\"}],[{\"id\":262,\"children\":[{\"id\":263},{\"id\":273},{\"id\":274},{\"id\":278},{\"id\":281},{\"id\":282}],\"uid\":\"w96hZCtfv\",\"time\":1625859836790,\"user\":{\"id\":245},\"title\":\"Complex test case | A\"}],[{\"user\":{\"id\":1},\"seen-by\":[{\"id\":245}],\"time\":1625229086268,\"title\":\"Note-taking app\",\"children\":[{\"id\":254},{\"id\":255}],\"uid\":\"nKmtwRNgd\",\"id\":253}],[{\"id\":1626709152312,\"uid\":\"07-19-2021\",\"time\":1626709152313,\"user\":{\"id\":245},\"title\":\"July 19th, 2021\"}],[{\"user\":{\"id\":41},\"time\":1614877122576,\"title\":\"March 4th, 2021\",\"children\":[{\"id\":190}],\"id\":188,\"uid\":\"03-04-2021\"}],[{\"id\":3,\"children\":[{\"id\":4},{\"id\":5}],\"uid\":\"AYmFRYV8q\",\"time\":1609151774585,\"user\":{\"id\":1},\"title\":\"Open Source Backlog\"}],[{\"user\":{\"id\":1},\"seen-by\":[{\"id\":77}],\"time\":1609188039048,\"title\":\"Flexiana Framework\",\"children\":[{\"id\":7},{\"id\":34},{\"id\":39}],\"uid\":\"zaqiZUUyR\",\"id\":6,\"sidebar\":0}],[{\"user\":{\"id\":1},\"time\":1614937968365,\"title\":\"March 5th, 2021\",\"children\":[{\"id\":194}],\"id\":191,\"uid\":\"03-05-2021\"}],[{\"id\":256,\"uid\":\"FXHmCHZoW\",\"time\":1625229099421,\"user\":{\"id\":1},\"title\":\"Evernote\"}],[{\"id\":1626280159646,\"uid\":\"07-14-2021\",\"time\":1626280159649,\"user\":{\"id\":245},\"title\":\"July 14th, 2021\"}],[{\"id\":1626389356021,\"uid\":\"07-15-2021\",\"time\":1626389356023,\"user\":{\"id\":245},\"title\":\"July 15th, 2021\"}]]")
+        data-b (map update-id data-a)
+        data-c (map delete-children data-a)]
+    (seq-diff-commit-revert-test data-a data-b)
+    (seq-diff-commit-revert-test data-b data-c)
+    (seq-diff-commit-revert-test data-c data-a)))
