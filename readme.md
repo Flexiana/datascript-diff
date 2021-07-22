@@ -65,7 +65,9 @@ Functions `seq-commit`, `seq-rever` and `seq-diff` from `seq-diff` namespace may
 - `seq-diff` implements the **diff algorithm** with sequences:
 ```clojure
 ;; The first parameter is source sequence and the second one is sequence we need to get
-(seq-diff [1 4] [1 2 3]);; -> [nil {:- 4, :+ 2} {:- nil, :+ 3}] gives vector of 3 elements: nil means no changes, {:- 4, :+ 2} means remove 4 and put 2, {:- nil, :+ 3} means add 3
+(seq-diff [1 4] [1 2 3]);; -> [nil {:- 4, :+ 2} {:- nil, :+ 3}] gives vector of 3 elements: 
+			;; nil means no changes, 
+			;; {:- 4, :+ 2} means remove 4 and put 2, {:- nil, :+ 3} means add 3
 ```
 ---
 
