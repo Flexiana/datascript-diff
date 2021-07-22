@@ -49,7 +49,7 @@ You can use the GUI to prove the diff algorithm, such that image shown:
 
 Also you can add a new test within test directory. The data-structure map test uses `map-commit`, `map-revert` and `map-diff` functions from `map-diff` namespace.
 
-Functions `seq-commit`, `seq-rever` and `seq-diff` from `seq-diff` namespace may be used over vectors.
+You can use the functions `seq-commit`, `seq-rever` and `seq-diff` from `seq-diff` namespace, they may be used only over vectors, as fallows:
 ![GUI of diff algorithm over sequences (vector)](img/gui-diff-algorithm-vec.png)
 =======
 #### Main functions
