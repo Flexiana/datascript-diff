@@ -69,6 +69,11 @@ Functions `seq-commit`, `seq-rever` and `seq-diff` from `seq-diff` namespace may
 			;; nil means no changes, 
 			;; {:- 4, :+ 2} means remove 4 and put 2, {:- nil, :+ 3} means add 3
 ```
+- `->clj` function is in `roam_research.cljs` file, its propose is to translate from string (it's a json stringyfied) to a **EDN** structure, that's it a data structure for clojure as shown:
+```clojure
+(rr/->clj "{\":block/parents\": [{ \":db/id\": 3 }]}"))
+;; -> {":block/parents" [{":db/id" 3}]}
+``` 
 ---
 
 ### How to add more tests?
@@ -105,4 +110,12 @@ let fullPage = {
 };
 
 JSON.stringify(fullPage);
+```
+
+This query is getting from RR-API all pages with their inside data. This one is tested with the test case `real-data-in-vector` at `map_diff_test.cljc` file.
+
+```javascript
+let allPages = window.roamAlphaAPI.q('[ :find (pull ?e [*]) :where [?e :node/title]]');
+
+JSON.stringify(allPage);
 ```
