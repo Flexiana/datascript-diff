@@ -43,14 +43,19 @@ Then you can run `yarn` to install dependencies, later you can run some environm
 ---
 
 ### Usage
+In here it'll show the use of **diff algorithm** in a Graphical User Interaface (GUI), also it presents the internal functions used on agree with the data-structure.
 
 You can use the GUI to prove the diff algorithm, such that image shown:
 ![GUI of diff algorithm](img/gui-diff-algorithm.png)
 
-Also you can add a new test within test directory. The data-structure map test uses `map-commit`, `map-revert` and `map-diff` functions from `map-diff` namespace.
+In the previous image the GUI is using the `map-commit`, `map-revert` and `map-diff` functions from `map-diff` namespace, obviously that is an example of diff algorithm with a **map**. 
 
-You can use the functions `seq-commit`, `seq-rever` and `seq-diff` from `seq-diff` namespace, they may be used only over vectors, as fallows:
+Also you can use the functions `seq-commit`, `seq-rever` and `seq-diff` from `seq-diff` namespace, they may be used with vectors alone, as fallows:
 ![GUI of diff algorithm over sequences (vector)](img/gui-diff-algorithm-vec.png)
+
+The `map-diff` and `seq-diff` have support to work with nested data with vectors and maps respectively.
+In the next section there is an explanation about that.
+
 =======
 #### Main functions
 
@@ -62,12 +67,13 @@ You can use the functions `seq-commit`, `seq-rever` and `seq-diff` from `seq-dif
 (map-diff {:a 1} {:b 2 :c 3}) ;; -> {[:b] {:+ 2}, [:c] {:+ 3}, [:a] {:- 1}}
                               ;; where :- means that a value has been removed 
 ```
+
 - `seq-diff` implements the **diff algorithm** with sequences:
 ```clojure
-;; The first parameter is source sequence and the second one is sequence we need to get
-(seq-diff [1 4] [1 2 3]);; -> [nil {:- 4, :+ 2} {:- nil, :+ 3}] gives vector of 3 elements: 
-			;; nil means no changes, 
-			;; {:- 4, :+ 2} means remove 4 and put 2, {:- nil, :+ 3} means add 3
+;; The first one parameter is a sequence and the second one is another sequence to be compared with the previous one.
+(seq-diff [1 4] [1 2 3]) ;; -> [nil {:- 4, :+ 2} {:- nil, :+ 3}] gives vector of 3 elements: 
+			                   ;; where nil means that it haven't changes, 
+			                   ;; {:- 4, :+ 2} means remove 4 and put 2, {:- nil, :+ 3} means add 3
 ```
 - `->clj` function is in `roam_research.cljs` file, its propose is to translate from string (it's a json stringyfied) to a **EDN** structure, that's it a data structure for clojure as shown:
 ```clojure
@@ -115,7 +121,7 @@ JSON.stringify(fullPage);
 This query is getting from RR-API all pages with their inside data. This one is tested with the test case `real-data-in-vector` at `map_diff_test.cljc` file.
 
 ```javascript
-let allPages = window.roamAlphaAPI.q('[ :find (pull ?e [*]) :where [?e :node/title]]');
+let allPages = window.roamAlphaAPI.q('[:find (pull ?e [*]) :where [?e :node/title]]');
 
 JSON.stringify(allPage);
 ```
