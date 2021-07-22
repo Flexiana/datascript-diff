@@ -49,6 +49,9 @@ You can use the GUI to prove the diff algorithm, such that image shown:
 
 Also you can add a new test within test directory. The data-structure map test uses `map-commit`, `map-revert` and `map-diff` functions from `map-diff` namespace.
 
+Functions `seq-commit`, `seq-rever` and `seq-diff` from `seq-diff` namespace may be used over vectors.
+![GUI of diff algorithm over sequences (vector)](img/gui-diff-algorithm-vec.png)
+=======
 #### Main functions
 
 - `map-diff` this function implements the **diff algorithm** with maps, for example:
@@ -58,6 +61,13 @@ Also you can add a new test within test directory. The data-structure map test u
                      ;; and each keword added is wrapped within a vector i.e. [:a]
 (map-diff {:a 1} {:b 2 :c 3}) ;; -> {[:b] {:+ 2}, [:c] {:+ 3}, [:a] {:- 1}}
                               ;; where :- means that a value has been removed 
+```
+- `seq-diff` implements the **diff algorithm** with sequences:
+```clojure
+;; The first parameter is source sequence and the second one is sequence we need to get
+(seq-diff [1 4] [1 2 3]);; -> [nil {:- 4, :+ 2} {:- nil, :+ 3}] gives vector of 3 elements: 
+			;; nil means no changes, 
+			;; {:- 4, :+ 2} means remove 4 and put 2, {:- nil, :+ 3} means add 3
 ```
 - `->clj` function is in `roam_research.cljs` file, its propose is to translate from string (it's a json stringyfied) to a **EDN** structure, that's it a data structure for clojure as shown:
 ```clojure
