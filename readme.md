@@ -65,7 +65,12 @@ In the next section there is an explanation about that.
 (map-diff {} {:a 2}) ;; -> {[:a] {:+ 2}} where :+ means a new value added
                      ;; and each keword added is wrapped within a vector i.e. [:a]
 (map-diff {:a 1} {:b 2 :c 3}) ;; -> {[:b] {:+ 2}, [:c] {:+ 3}, [:a] {:- 1}}
-                              ;; where :- means that a value has been removed 
+                              ;; where :- means that a value has been removed
+(map-diff {:x [{:a 2} 2]} {:x [{:a 3} 2]}) ;; -> {[:x] [{[:a] {:- 2, :+ 3}} nil]}
+                                           ;; in here there is a change in a nested
+                                           ;; object inside a vector, the nil in the
+                                           ;; answer means that element isn't taking
+                                           ;; changes to print.
 ```
 
 - `seq-diff` implements the **diff algorithm** with sequences:
@@ -74,6 +79,9 @@ In the next section there is an explanation about that.
 (seq-diff [1 4] [1 2 3]) ;; -> [nil {:- 4, :+ 2} {:- nil, :+ 3}] gives vector of 3 elements: 
 			                   ;; where nil means that it haven't changes, 
 			                   ;; {:- 4, :+ 2} means remove 4 and put 2, {:- nil, :+ 3} means add 3
+(seq-diff [{:a 2} 2] [{:a 3} 2]) ;; -> [{[:a] {:- 2, :+ 3}} nil]
+                                 ;; it's working with nested maps in each vector
+                                 ;; and it understands the differences between nested maps
 ```
 - `->clj` function is in `roam_research.cljs` file, its propose is to translate from string (it's a json stringyfied) to a **EDN** structure, that's it a data structure for clojure as shown:
 ```clojure
