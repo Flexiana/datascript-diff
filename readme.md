@@ -1,6 +1,6 @@
-# Test task for RoamResearch (RR)
+# RoamResearch (RR)
 
-This project is a test task to implements a diff algorithm, it works with some **Clojure/Script** data-structures, these are:
+This project implements a diff algorithm, it works with some **Clojure/Script** data-structures, these are:
 
 - Vectors, e.g. `[1 2 3 4]`.
 - Maps, e.g. `{:key "value"}`.
